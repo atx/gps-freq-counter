@@ -2,6 +2,7 @@
 package gfc
 
 import chisel3._
+import chisel3.util._
 import chisel3.experimental._
 
 
@@ -17,7 +18,8 @@ class MemoryBus extends Bundle {
 }
 
 
-class picorv32 extends BlackBox(Map("ENABLE_IRQ" -> 1)) {
+class picorv32 extends BlackBox(Map("ENABLE_IRQ" -> 1, "PROGADDR_RESET" -> 0,
+                                    "ENABLE_REGS_16_31" -> 0)) with HasBlackBoxResource {
 
   val io = IO(new Bundle {
     val clk = Input(Clock())
@@ -29,10 +31,12 @@ class picorv32 extends BlackBox(Map("ENABLE_IRQ" -> 1)) {
     val eoi = Output(UInt(32.W))
   })
 
+  setResource("/picorv32.v")
+
 }
 
 
-class PicoRV32 extends Module {
+class PicoRV extends Module {
   val io = IO(new Bundle {
     val mem = new MemoryBus()
     val irq = Input(UInt(32.W))
