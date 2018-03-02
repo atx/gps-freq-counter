@@ -1,0 +1,199 @@
+EESchema Schematic File Version 2
+LIBS:gfc-rescue
+LIBS:power
+LIBS:device
+LIBS:switches
+LIBS:relays
+LIBS:motors
+LIBS:transistors
+LIBS:conn
+LIBS:linear
+LIBS:regul
+LIBS:74xx
+LIBS:cmos4000
+LIBS:adc-dac
+LIBS:memory
+LIBS:xilinx
+LIBS:microcontrollers
+LIBS:dsp
+LIBS:microchip
+LIBS:analog_switches
+LIBS:motorola
+LIBS:texas
+LIBS:intel
+LIBS:audio
+LIBS:interface
+LIBS:digital-audio
+LIBS:philips
+LIBS:display
+LIBS:cypress
+LIBS:siliconi
+LIBS:opto
+LIBS:atmel
+LIBS:contrib
+LIBS:valves
+LIBS:lp5912
+LIBS:neo-6m
+LIBS:sma
+LIBS:10m08sae144
+LIBS:sn74lv1t34dbv
+LIBS:oled_spi
+LIBS:asv-xx
+LIBS:gfc-cache
+EELAYER 25 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 4
+Title ""
+Date ""
+Rev ""
+Comp ""
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Sheet
+S 4100 4300 750  500 
+U 5A91D258
+F0 "Power" 60
+F1 "power.sch" 60
+F2 "USB_D+" B R 4850 4450 60 
+F3 "USB_D-" B R 4850 4550 60 
+F4 "USB_PULL" I R 4850 4650 60 
+$EndSheet
+$Sheet
+S 4300 3250 550  600 
+U 5A91F8A2
+F0 "GPS" 60
+F1 "gps.sch" 60
+F2 "PPS" O R 4850 3400 60 
+F3 "TX" O R 4850 3600 60 
+F4 "RX" I R 4850 3700 60 
+$EndSheet
+$Sheet
+S 5450 3250 650  1200
+U 5A93CFA9
+F0 "FPGA" 60
+F1 "fpga.sch" 60
+F2 "GPS_TX" I L 5450 3600 60 
+F3 "GPS_RX" O L 5450 3700 60 
+F4 "PPS" I L 5450 3400 60 
+F5 "USB_D+" B L 5450 3950 60 
+F6 "USB_D-" B L 5450 4050 60 
+F7 "USB_PULL" O L 5450 4150 60 
+$EndSheet
+$Comp
+L GND #PWR01
+U 1 1 5A92BA70
+P 700 7500
+F 0 "#PWR01" H 700 7250 50  0001 C CNN
+F 1 "GND" H 700 7350 50  0000 C CNN
+F 2 "" H 700 7500 50  0001 C CNN
+F 3 "" H 700 7500 50  0001 C CNN
+	1    700  7500
+	1    0    0    -1  
+$EndComp
+$Comp
+L TEST_1P S1
+U 1 1 5A92BA84
+P 700 7500
+F 0 "S1" H 700 7770 50  0000 C CNN
+F 1 "M2" H 700 7700 50  0000 C CNN
+F 2 "Mounting_Holes:MountingHole_2.2mm_M2_Pad" H 900 7500 50  0001 C CNN
+F 3 "" H 900 7500 50  0001 C CNN
+	1    700  7500
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR02
+U 1 1 5A92BB63
+P 900 7500
+F 0 "#PWR02" H 900 7250 50  0001 C CNN
+F 1 "GND" H 900 7350 50  0000 C CNN
+F 2 "" H 900 7500 50  0001 C CNN
+F 3 "" H 900 7500 50  0001 C CNN
+	1    900  7500
+	1    0    0    -1  
+$EndComp
+$Comp
+L TEST_1P S2
+U 1 1 5A92BB69
+P 900 7500
+F 0 "S2" H 900 7770 50  0000 C CNN
+F 1 "M2" H 900 7700 50  0000 C CNN
+F 2 "Mounting_Holes:MountingHole_2.2mm_M2_Pad" H 1100 7500 50  0001 C CNN
+F 3 "" H 1100 7500 50  0001 C CNN
+	1    900  7500
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR03
+U 1 1 5A92BBA3
+P 1100 7500
+F 0 "#PWR03" H 1100 7250 50  0001 C CNN
+F 1 "GND" H 1100 7350 50  0000 C CNN
+F 2 "" H 1100 7500 50  0001 C CNN
+F 3 "" H 1100 7500 50  0001 C CNN
+	1    1100 7500
+	1    0    0    -1  
+$EndComp
+$Comp
+L TEST_1P S3
+U 1 1 5A92BBA9
+P 1100 7500
+F 0 "S3" H 1100 7770 50  0000 C CNN
+F 1 "M2" H 1100 7700 50  0000 C CNN
+F 2 "Mounting_Holes:MountingHole_2.2mm_M2_Pad" H 1300 7500 50  0001 C CNN
+F 3 "" H 1300 7500 50  0001 C CNN
+	1    1100 7500
+	1    0    0    -1  
+$EndComp
+$Comp
+L GND #PWR04
+U 1 1 5A92BBAF
+P 1300 7500
+F 0 "#PWR04" H 1300 7250 50  0001 C CNN
+F 1 "GND" H 1300 7350 50  0000 C CNN
+F 2 "" H 1300 7500 50  0001 C CNN
+F 3 "" H 1300 7500 50  0001 C CNN
+	1    1300 7500
+	1    0    0    -1  
+$EndComp
+$Comp
+L TEST_1P S4
+U 1 1 5A92BBB5
+P 1300 7500
+F 0 "S4" H 1300 7770 50  0000 C CNN
+F 1 "M2" H 1300 7700 50  0000 C CNN
+F 2 "Mounting_Holes:MountingHole_2.2mm_M2_Pad" H 1500 7500 50  0001 C CNN
+F 3 "" H 1500 7500 50  0001 C CNN
+	1    1300 7500
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	4850 3400 5450 3400
+Wire Wire Line
+	5450 3600 4850 3600
+Wire Wire Line
+	4850 3700 5450 3700
+Wire Wire Line
+	4850 4450 5100 4450
+Wire Wire Line
+	5100 4450 5100 3950
+Wire Wire Line
+	5100 3950 5450 3950
+Wire Wire Line
+	4850 4550 5150 4550
+Wire Wire Line
+	5150 4550 5150 4050
+Wire Wire Line
+	5150 4050 5450 4050
+Wire Wire Line
+	4850 4650 5200 4650
+Wire Wire Line
+	5200 4650 5200 4150
+Wire Wire Line
+	5200 4150 5450 4150
+$EndSCHEMATC
