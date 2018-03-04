@@ -23,7 +23,8 @@ class MemoryMux(slave_prefixes: Seq[UInt]) extends Module {
     io.slaves(i).addr := io.master.addr & ("b" + "1"*rest_width).U
   }
 
-  io.master.ready := false.B
+  io.master.ready := MuxCase(false.B,
+    (io.slaves zip selectors) map { case (sio, sel) =>  sel -> sio.ready})
 
   io.master.rdata := MuxCase("x01020304".U,
     (io.slaves zip selectors) map { case (sio, sel) =>
