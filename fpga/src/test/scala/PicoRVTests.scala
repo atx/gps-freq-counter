@@ -79,17 +79,64 @@ class PicoRVIntegrationTester(c: PicoRVIntegrationTestWrapper) extends PeekPokeT
 }
 
 
+abstract class PicoRVBaseFirmwareTestWrapper(resourceName: String) extends Module {
+  private val inputStream = getClass.getResourceAsStream("/" + resourceName)
+  private val stream = Stream.continually(inputStream.read)
+    .takeWhile(_ != -1).map(_.longValue).grouped(4)
+  val firmware = (stream map { v =>
+    (v(0) <<  0) | (v(1) <<  8) | (v(2) << 16) | (v(3) << 24)
+  } map (_.U(32.W))).toList
+  val fwMem = Module(new ReadOnlyMemory(firmware))
+}
+
+class PicoRVFibonnaciTestWrapper extends PicoRVBaseFirmwareTestWrapper("picorv_test_fib.bin") {
+  val io = IO(new Bundle {
+    val out = Output(UInt(32.W))
+  })
+
+  val outReg = Module(new Register)
+  io.out := outReg.io.value
+
+  val rwMem = Module(new Memory(1024 * 12/4))
+  val stackMem = Module(new Memory(1024))
+
+  val mux = Module(new MemoryMux(List(
+    0x0000.U(16.W),
+    0x2000.U(16.W),
+    0x4000000.U(28.W),
+    0xfffff.U(20.W)
+    )))
+
+  mux.io.slaves(0) <> fwMem.io.bus
+  mux.io.slaves(1) <> rwMem.io.bus
+  mux.io.slaves(2) <> outReg.io.bus
+  mux.io.slaves(3) <> stackMem.io.bus
+
+  val rv = Module(new PicoRV)
+  mux.io.master <> rv.io.mem
+}
+
+class PicoRVFibonnaciTester(c: PicoRVFibonnaciTestWrapper) extends PeekPokeTester(c) {
+  step(7000)
+  expect(c.io.out, 0x2f4b)
+}
+
+
 class PicoRVTests extends ChiselFlatSpec {
+  val args = Array("--backend-name", "verilator")
   "PicoRV" should "correctly execute instructions" in {
-    val args = Array("--backend-name", "verilator")
     iotesters.Driver.execute(args, () => new PicoRV) {
       c => new PicoRVSimpleTester(c)
     } should be (true)
   }
   "PicoRV" should "correctly interface with a memory mapped device" in {
-    val args = Array("--backend-name", "verilator")
     iotesters.Driver.execute(args, () => new PicoRVIntegrationTestWrapper) {
       c => new PicoRVIntegrationTester(c)
+    } should be (true)
+  }
+  "PicoRV" should "produce correct result with test1" in {
+    iotesters.Driver.execute(args, () => new PicoRVFibonnaciTestWrapper) {
+      c => new PicoRVFibonnaciTester(c)
     } should be (true)
   }
 }

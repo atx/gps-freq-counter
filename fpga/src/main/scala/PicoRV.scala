@@ -18,8 +18,18 @@ class MemoryBus extends Bundle {
 }
 
 
-class picorv32 extends BlackBox(Map("ENABLE_IRQ" -> 1, "PROGADDR_RESET" -> 0,
-                                    "ENABLE_REGS_16_31" -> 0)) with HasBlackBoxResource {
+object picorv32 {
+  private val config = Map[String,Param](
+      "ENABLE_IRQ" -> 1,
+      "PROGADDR_RESET" -> 0x00000000l,
+      "ENABLE_REGS_16_31" -> 0,
+      "ENABLE_COUNTERS" -> 0,
+      "CATCH_ILLINSN" -> 0
+    )
+}
+
+
+class picorv32 extends BlackBox(picorv32.config) with HasBlackBoxResource {
 
   val io = IO(new Bundle {
     val clk = Input(Clock())
