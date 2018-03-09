@@ -4,7 +4,7 @@ version := "0.0-SNAPSHOT"
 
 name := "gfc"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.12.4"
 
 libraryDependencies ++= Seq(
 	"edu.berkeley.cs" %% "chisel3" % "3.0.2",
