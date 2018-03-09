@@ -10,7 +10,7 @@ object Memory
     val write = bus.valid && bus.wstrb =/= 0.U
     val read = bus.valid && bus.wstrb === 0.U
     var wordAddress = bus.addr >> 2
-    bus.ready := true.B
+    bus.ready := RegNext(bus.valid)
 
     when (write) {
       val inBitVec = Vec(Array(bus.wdata(7, 0),
