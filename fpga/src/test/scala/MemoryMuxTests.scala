@@ -58,13 +58,13 @@ class MemoryMuxTestWrapper extends Module {
   // 0x3111234 0 - m3
   // 0x3111238 0 - m4
   // 0xff00ff 00 - m5
-  var prefixes = Array(
-    0x10.U(8.W),
-    0x2000.U(16.W),
-    0x3111234.U(28.W),
-    0x3111238.U(28.W),
-    0xff00ff.U(24.W),
-    0xffffff.U(24.W)
+  var prefixes = List(
+    0x10000000l ->  8,
+    0x20000000l -> 16,
+    0x31112340l -> 28,
+    0x31112380l -> 28,
+    0xff00ff00l -> 24,
+    0xffffff00l -> 24
   )
   val mux = Module(new MemoryMux(prefixes))
   for ((m, i) <- (ms zip mux.io.slaves)) {

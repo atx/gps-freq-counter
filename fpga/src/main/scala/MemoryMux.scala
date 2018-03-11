@@ -4,7 +4,7 @@ package gfc
 import chisel3._
 import chisel3.util._
 
-class MemoryMux(slave_prefixes: Seq[UInt]) extends Module {
+class MemoryMux(slave_prefixes: Seq[(Long, Int)]) extends Module {
   val io = IO(new Bundle {
     val master = Flipped(new MemoryBus)
     val slaves = Vec(slave_prefixes.size, new MemoryBus)
@@ -14,9 +14,10 @@ class MemoryMux(slave_prefixes: Seq[UInt]) extends Module {
   val selectors = Wire(Vec(slave_prefixes.size, Bool()))
 
   for (i <- 0 until slave_prefixes.size) {
-    val rest_width = io.master.addr.getWidth - slave_prefixes(i).getWidth
+    val (prefix, width) = slave_prefixes(i)
+    val rest_width = io.master.addr.getWidth - width
     extracted_prefixes(i) := io.master.addr >> rest_width
-    selectors(i) := slave_prefixes(i) === extracted_prefixes(i)
+    selectors(i) := (prefix.U(32.W) >> rest_width) === extracted_prefixes(i)
 
     io.slaves(i) <> io.master
     io.slaves(i).valid := selectors(i) && io.master.valid

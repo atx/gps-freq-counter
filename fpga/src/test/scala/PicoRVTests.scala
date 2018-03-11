@@ -62,8 +62,8 @@ class PicoRVIntegrationTestWrapper extends Module {
  io.out := outReg.io.value
 
  val mux = Module(new MemoryMux(List(
-   0x000000.U(24.W),
-   0x2000000.U(28.W)
+   0x00000000l -> 24,
+   0x20000000l -> 28
    )))
 
  val rv = Module(new PicoRV)
@@ -101,10 +101,10 @@ class PicoRVFibonnaciTestWrapper extends PicoRVBaseFirmwareTestWrapper("picorv_t
   val stackMem = Module(new Memory(1024))
 
   val mux = Module(new MemoryMux(List(
-    0x0000.U(16.W),
-    0x2000.U(16.W),
-    0x4000000.U(28.W),
-    0xfffff.U(20.W)
+    0x00000000l -> 16,
+    0x20000000l -> 16,
+    0x40000000l -> 28,
+    0xfffff000l -> 20
     )))
 
   mux.io.slaves(0) <> fwMem.io.bus
