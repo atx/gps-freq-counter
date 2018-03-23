@@ -14,7 +14,7 @@ void fill_data()
 {
 	int b = 0;
 	int a = 1;
-	for (int i = 0; i < ARRAY_SIZE(data); i++) {
+	for (unsigned int i = 0; i < ARRAY_SIZE(data); i++) {
 		int n = a + b;
 		b = a;
 		a = n;

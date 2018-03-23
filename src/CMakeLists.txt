@@ -15,6 +15,8 @@ set (CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -march=rv32e -mabi=ilp32e")
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -ggdb -march=rv32e -mabi=ilp32e -ffunction-sections")
 set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nostartfiles -T ${CMAKE_SOURCE_DIR}/linker.ld")
 
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-main-return-type -Wno-main -Wno-unused-parameter")
+
 add_executable (gfc main.c reset.c reset.s linker.ld)
 add_executable (test_fib test_fib.c reset.c reset.s linker.ld)
 
