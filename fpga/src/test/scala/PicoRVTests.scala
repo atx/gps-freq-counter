@@ -84,7 +84,11 @@ abstract class PicoRVBaseFirmwareTestWrapper(resourceName: String) extends Modul
   private val stream = Stream.continually(inputStream.read)
     .takeWhile(_ != -1).map(_.longValue).grouped(4)
   val firmware = (stream map { v =>
-    (v(0) <<  0) | (v(1) <<  8) | (v(2) << 16) | (v(3) << 24)
+    var word = 0l
+    for ((c, i) <- v.zipWithIndex) {
+      word |= (c << (i * 8))
+    }
+    word
   } map (_.U(32.W))).toList
   val fwMem = Module(new ReadOnlyMemory(firmware))
 }
