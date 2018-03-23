@@ -1,6 +1,6 @@
 
-/* At this point, we are not yet using the UFM, so let's just stick everything
- * to one memory mapped RAM segment.
+/* At this point, we are not yet using the UFM, so copying from "flash" to RAM
+ * is somewhat dumb, but whatever...
  * */
 MEMORY
 {
@@ -22,25 +22,32 @@ SECTIONS
 	.text :
 	{
 		_text_start = .;
-		*(.text)
-		*(.text.*)
-		*(.rodata)
-		*(.rodata.*)
+		*(.text*)
+		. = ALIGN(4);
+		*(.rodata*)
 		*(.gcc*)
+		. = ALIGN(4);
 		_text_end = .;
 	} > flash
 
 	.data :
 	{
 		_data_start = .;
-		*(.data)
-		*(.data.*)
+		*(.sdata*)
+		*(.data*)
+		. = ALIGN(4);
 		_data_end = .;
 	} > ram AT > flash
+	_data_load_start = LOADADDR(.data);
+	_data_load_end = LOADADDR(.data) + SIZEOF(.data);
 
 	.bss :
 	{
-		*(.bss)
-		*(.bss.*)
+		_bss_start = .;
+		*(.sbss*)
+		*(.bss*)
+		*(COMMON)
+		. = ALIGN(4);
+		_bss_end = .;
 	} > ram
 }
