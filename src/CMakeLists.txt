@@ -19,6 +19,7 @@ set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-main-return-type -Wno-ma
 
 add_executable (gfc main.c reset.c reset.s linker.ld)
 add_executable (test_fib test_fib.c reset.c reset.s linker.ld)
+add_executable (test_spi test_spi.c reset.c spi.c reset.s linker.ld)
 
 get_property (_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
 foreach (target_name ${_targets})

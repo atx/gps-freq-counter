@@ -125,6 +125,63 @@ class PicoRVFibonnaciTester(c: PicoRVFibonnaciTestWrapper) extends PeekPokeTeste
   expect(c.io.out, 0x2f4b)
 }
 
+class PicoRVSPITestWrapper extends PicoRVBaseFirmwareTestWrapper("picorv_test_spi.bin") {
+  val io = IO(new Bundle {
+    val spi = new Bundle {
+      val mosi = Output(Bool())
+      val clk = Output(Bool())
+    }
+  })
+
+  val rwMem = Module(new Memory(1024 * 12/4))
+  val stackMem = Module(new Memory(1024))
+
+  val mux = Module(new MemoryMux(List(
+    0x00000000l -> 16,
+    0x20000000l -> 16,
+    0x30000000l -> 22,
+    0xfffff000l -> 20
+    )))
+
+  val spi = Module(new SPI)
+  io.spi <> spi.io.spi
+
+  mux.io.slaves(0) <> fwMem.io.bus
+  mux.io.slaves(1) <> rwMem.io.bus
+  mux.io.slaves(2) <> spi.io.bus
+  mux.io.slaves(3) <> stackMem.io.bus
+
+  val rv = Module(new PicoRV)
+  mux.io.master <> rv.io.mem
+}
+
+class PicoRVSPITester(c: PicoRVSPITestWrapper) extends BetterPeekPokeTester(c) {
+
+  // TODO: DRY... (SPITests)
+  def readSPIByte() : Int = {
+    var ret = 0x00
+    for (_ <- 0 to 7) {
+      stepWhile(peek(c.io.spi.clk) == 1, 10) {}
+      nSteps(5) {
+        expect(c.io.spi.clk, false.B)
+      }
+      expect(c.io.spi.clk, true.B)
+      ret = (ret << 1) | peek(c.io.spi.mosi).toInt
+    }
+    return ret
+  }
+
+  val expectedData = List(
+	0xaa, 0x1d, 0xbe, 0xef, 0xaa, 0x10, 0x41
+  )
+  stepWhile(peek(c.io.spi.clk) == 1, 3000) {}
+
+  for (exp <- expectedData) {
+    val read = readSPIByte()
+    expect(read == exp, s"$read == $exp")
+  }
+}
+
 
 class PicoRVTests extends ChiselFlatSpec {
   val args = Array("--backend-name", "verilator")
@@ -141,6 +198,11 @@ class PicoRVTests extends ChiselFlatSpec {
   "PicoRV" should "produce correct result with test1" in {
     iotesters.Driver.execute(args, () => new PicoRVFibonnaciTestWrapper) {
       c => new PicoRVFibonnaciTester(c)
+    } should be (true)
+  }
+  "PicoRV" should "correctly interact with the SPI peripheral" in {
+    iotesters.Driver.execute(args, () => new PicoRVSPITestWrapper) {
+      c => new PicoRVSPITester(c)
     } should be (true)
   }
 }
