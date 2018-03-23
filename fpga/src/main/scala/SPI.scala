@@ -12,11 +12,15 @@ class SPI(val divider: Int = 10, val memSize: Int = 256) extends Module {
       val mosi = Output(Bool())
       val clk = Output(Bool())
     }
+    val status = new Bundle {
+      val idle = Output(Bool())
+    }
   })
 
   val sIdle :: sFirst :: sRun :: Nil = Enum(3)
 
   val state = RegInit(sIdle)
+  io.status.idle := state === sIdle
 
   val baseCntr = Counter(divider)
 
@@ -40,7 +44,7 @@ class SPI(val divider: Int = 10, val memSize: Int = 256) extends Module {
   switch (state) {
     is (sIdle) {
       when (writingToControl) {
-        ptr := io.bus.wdata(7, 0) * 32.U
+        ptr := (io.bus.wdata(7, 0) + 1.U) * 32.U
         byteCount := io.bus.wdata(31, 8)
         state := sFirst
       }

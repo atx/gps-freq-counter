@@ -4,8 +4,8 @@ package gfc
 import chisel3._
 import chisel3.iotesters.{PeekPokeTester}
 
-abstract class BusTester[+T <: Module](val c: T, val bus: MemoryBus) extends PeekPokeTester(c) {
-  
+abstract class BusTester[+T <: Module](val c: T, val bus: MemoryBus) extends BetterPeekPokeTester(c) {
+
   def setupBusWrite(address: UInt, value: UInt, mask: UInt = "b1111".U) = {
     poke(bus.valid, true.B)
     poke(bus.addr, address)
