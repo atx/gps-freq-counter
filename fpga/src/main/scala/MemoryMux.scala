@@ -4,6 +4,17 @@ package gfc
 import chisel3._
 import chisel3.util._
 
+object MemoryMux {
+  def build(master: MemoryBus, devs: Seq[Tuple3[Long, Int, MemoryBus]]) : MemoryMux = {
+    val mux = Module(new MemoryMux(devs map {x => (x._1, x._2)}))
+    for (((_, _, devBus), muxBus) <- devs zip mux.io.slaves) {
+      muxBus <> devBus
+    }
+    mux.io.master <> master
+    return mux
+  }
+}
+
 class MemoryMux(slave_prefixes: Seq[(Long, Int)]) extends Module {
   val io = IO(new Bundle {
     val master = Flipped(new MemoryBus)

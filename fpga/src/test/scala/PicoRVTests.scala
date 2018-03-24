@@ -61,16 +61,11 @@ class PicoRVIntegrationTestWrapper extends Module {
  val outReg = Module(new Register)
  io.out := outReg.io.value
 
- val mux = Module(new MemoryMux(List(
-   0x00000000l -> 24,
-   0x20000000l -> 28
-   )))
-
  val rv = Module(new PicoRV)
-
- mux.io.slaves(0) <> fwMem.io.bus
- mux.io.slaves(1) <> outReg.io.bus
- mux.io.master <> rv.io.mem
+ val mux = MemoryMux.build(rv.io.mem, List(
+   (0x00000000l, 24, fwMem.io.bus),
+   (0x20000000l, 28, outReg.io.bus)
+   ))
 }
 
 class PicoRVIntegrationTester(c: PicoRVIntegrationTestWrapper) extends PeekPokeTester(c) {
@@ -107,16 +102,9 @@ abstract class PicoRVBaseFirmwareTestWrapper(resourceName: String) extends Modul
     (0xfffff000l, 20, stackMem.io.bus)
     )
   val mmDevices: Seq[Tuple3[Long, Int, MemoryBus]]
-  private val mmDevicesAll = mmDevicesBase ++ mmDevices
-
-  val memoryMux = Module(new MemoryMux(mmDevicesAll map { x => (x._1, x._2) }))
-
-  for (((_, _, bus), i) <- mmDevicesAll.zipWithIndex) {
-    memoryMux.io.slaves(i) <> bus
-  }
 
   val picorv = Module(new PicoRV)
-  memoryMux.io.master <> picorv.io.mem
+  val memoryMux = MemoryMux.build(picorv.io.mem, mmDevicesBase ++ mmDevices)
 }
 
 class PicoRVFibonnaciTestWrapper extends PicoRVBaseFirmwareTestWrapper("picorv_test_fib.bin") {

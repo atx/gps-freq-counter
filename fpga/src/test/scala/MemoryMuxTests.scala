@@ -58,20 +58,14 @@ class MemoryMuxTestWrapper extends Module {
   // 0x3111234 0 - m3
   // 0x3111238 0 - m4
   // 0xff00ff 00 - m5
-  var prefixes = List(
-    0x10000000l ->  8,
-    0x20000000l -> 16,
-    0x31112340l -> 28,
-    0x31112380l -> 28,
-    0xff00ff00l -> 24,
-    0xffffff00l -> 24
-  )
-  val mux = Module(new MemoryMux(prefixes))
-  for ((m, i) <- (ms zip mux.io.slaves)) {
-    i <> m.io.bus
-  }
-
-  io.master <> mux.io.master
+  val mux = MemoryMux.build(io.master, List(
+    (0x10000000l,  8, m1.io.bus),
+    (0x20000000l, 16, m2.io.bus),
+    (0x31112340l, 28, m3.io.bus),
+    (0x31112380l, 28, m4.io.bus),
+    (0xff00ff00l, 24, m5.io.bus),
+    (0xffffff00l, 24, m6.io.bus)
+    ))
 }
 
 class MemoryMuxReadTester(c: MemoryMuxTestWrapper) extends PeekPokeTester(c) {
