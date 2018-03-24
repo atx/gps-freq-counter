@@ -70,8 +70,9 @@ class VerilogInitializedMemoryBase(resourceName: String) extends BlackBox with H
     val clock = Input(Clock())
     val bus = Flipped(new MemoryBus)
   })
-  val resource = getClass.getResource("/" + resourceName).toURI()
-  val path = java.nio.file.Paths.get(resource).toAbsolutePath().toString()
+  val resource = getClass.getResource("/" + resourceName)
+  val nwords = VerilogInitializedMemory.loadVerilogHexFromStream(resource.openStream()).length
+  val path = java.nio.file.Paths.get(resource.toURI()).toAbsolutePath().toString()
   setInline("VerilogInitializedMemoryBase.v",
     s"""
     |module VerilogInitializedMemoryBase(
@@ -84,7 +85,7 @@ class VerilogInitializedMemoryBase(resourceName: String) extends BlackBox with H
     |  input bus_instr,
     |  output reg [31:0] bus_rdata
     |  );
-    |reg [31:0] mem [0:12000];
+    |reg [31:0] mem [0:$nwords];
     |initial begin
     |    $$readmemh("$path", mem);
     |end
@@ -99,6 +100,14 @@ class VerilogInitializedMemoryBase(resourceName: String) extends BlackBox with H
     |end
     |endmodule
     """.stripMargin)
+}
+
+
+object VerilogInitializedMemory {
+  def loadVerilogHexFromStream(stream: java.io.InputStream) : Seq[Long] = {
+    Iterator.continually(stream.read).takeWhile(_ != -1)
+      .map(_.toChar).mkString.split(" +").map(java.lang.Long.parseLong(_, 16))
+  }
 }
 
 

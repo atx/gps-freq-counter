@@ -75,9 +75,7 @@ class ReadOnlyMemoryTester(c: ReadOnlyMemory) extends PeekPokeTester(c) {
 
 class VerilogInitializedMemoryTester(c: VerilogInitializedMemory) extends BusTester(c, c.io.bus, readTimeout=1) {
   val inputStream = getClass.getResourceAsStream("/verilog_initialized_memory.hex")
-  // Weird hacks everywhere...
-  val words = Iterator.continually(inputStream.read).takeWhile(_ != -1)
-      .map(_.toChar).mkString.split(" ").map(java.lang.Long.parseLong(_, 16))
+  val words = VerilogInitializedMemory.loadVerilogHexFromStream(inputStream)
 
   for ((e, a) <- words.zipWithIndex) {
     val r = busRead((a << 2).U)
