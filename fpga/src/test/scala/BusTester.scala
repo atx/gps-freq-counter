@@ -6,6 +6,11 @@ import chisel3.iotesters.{PeekPokeTester}
 
 abstract class BusTester[+T <: Module](val c: T, val bus: MemoryBus) extends BetterPeekPokeTester(c) {
 
+  poke(bus.valid, false.B)
+  poke(bus.addr, 0x00000000.U)
+  poke(bus.wdata, 0x00000000.U)
+  poke(bus.wstrb, "b0000".U)
+
   def setupBusWrite(address: UInt, value: UInt, mask: UInt = "b1111".U) = {
     poke(bus.valid, true.B)
     poke(bus.addr, address)
