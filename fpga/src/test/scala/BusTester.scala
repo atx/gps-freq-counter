@@ -4,7 +4,8 @@ package gfc
 import chisel3._
 import chisel3.iotesters.{PeekPokeTester}
 
-abstract class BusTester[+T <: Module](val c: T, val bus: MemoryBus) extends BetterPeekPokeTester(c) {
+abstract class BusTester[+T <: Module](val c: T, val bus: MemoryBus, val readTimeout: Int = -1)
+    extends BetterPeekPokeTester(c) {
 
   poke(bus.valid, false.B)
   poke(bus.addr, 0x00000000.U)
@@ -38,9 +39,7 @@ abstract class BusTester[+T <: Module](val c: T, val bus: MemoryBus) extends Bet
 
   def busRead(address: UInt) : BigInt = {
     setupBusRead(address)
-    while (peek(bus.ready) == 0) {
-      step(1)
-    }
+    stepWhile(peek(bus.ready) == 0, timeout=readTimeout) {}
     setupBusIdle()
     return peek(bus.rdata)
   }
