@@ -75,24 +75,7 @@ class PicoRVIntegrationTester(c: PicoRVIntegrationTestWrapper) extends PeekPokeT
 
 
 abstract class PicoRVBaseFirmwareTestWrapper(resourceName: String) extends Module {
-  private val inputStream = getClass.getResourceAsStream("/" + resourceName)
-  private val stream = Stream.continually(inputStream.read)
-    .takeWhile(_ != -1).map(_.longValue).grouped(4)
-  val firmware = (stream map { v =>
-    var word = 0l
-    for ((c, i) <- v.zipWithIndex) {
-      word |= (c << (i * 8))
-    }
-    word
-  } map (_.U(32.W))).toList
-
-  val baseMemPrefixes = List(
-    0x00000000l -> 18,
-    0x20000000l -> 18,
-    0xfffff000l -> 20
-    )
-
-  val fwMem = Module(new ReadOnlyMemory(firmware))
+  val fwMem = ReadOnlyMemory.fromResource(resourceName)
   val rwMem = Module(new Memory(1024 * 12/4))
   val stackMem = Module(new Memory(1024))
 
