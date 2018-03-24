@@ -63,3 +63,51 @@ class ReadOnlyMemory(data: Seq[UInt]) extends Module {
   io.bus.ready := true.B
   io.bus.rdata := rom(io.bus.addr >> 2)
 }
+
+
+class VerilogInitializedMemoryBase(resourceName: String) extends BlackBox with HasBlackBoxInline {
+  val io = IO(new Bundle {
+    val clock = Input(Clock())
+    val bus = Flipped(new MemoryBus)
+  })
+  val resource = getClass.getResource("/" + resourceName).toURI()
+  val path = java.nio.file.Paths.get(resource).toAbsolutePath().toString()
+  setInline("VerilogInitializedMemoryBase.v",
+    s"""
+    |module VerilogInitializedMemoryBase(
+    |  input clock,
+    |  input bus_valid,
+    |  output reg bus_ready,
+    |  input [31:0] bus_addr,
+    |  input [31:0] bus_wdata,
+    |  input [3:0] bus_wstrb,
+    |  input bus_instr,
+    |  output reg [31:0] bus_rdata
+    |  );
+    |reg [31:0] mem [0:12000];
+    |initial begin
+    |    $$readmemh("$path", mem);
+    |end
+
+    |always @(posedge clock) begin
+    |  if (bus_valid) begin
+    |    bus_rdata <= mem[bus_addr >> 2];
+    |    bus_ready <= 1;
+    |  end else begin
+    |    bus_ready <= 0;
+    |  end
+    |end
+    |endmodule
+    """.stripMargin)
+}
+
+
+class VerilogInitializedMemory(val resourceName: String) extends Module {
+  val io = IO(new Bundle {
+    val bus = Flipped(new MemoryBus)
+  })
+
+  val base = Module(new VerilogInitializedMemoryBase(resourceName))
+  io.bus <> base.io.bus
+  base.io.clock := clock
+}

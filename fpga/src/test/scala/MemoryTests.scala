@@ -73,17 +73,35 @@ class ReadOnlyMemoryTester(c: ReadOnlyMemory) extends PeekPokeTester(c) {
   }
 }
 
+class VerilogInitializedMemoryTester(c: VerilogInitializedMemory) extends BusTester(c, c.io.bus, readTimeout=1) {
+  val inputStream = getClass.getResourceAsStream("/verilog_initialized_memory.hex")
+  // Weird hacks everywhere...
+  val words = Iterator.continually(inputStream.read).takeWhile(_ != -1)
+      .map(_.toChar).mkString.split(" ").map(java.lang.Long.parseLong(_, 16))
+
+  for ((e, a) <- words.zipWithIndex) {
+    val r = busRead((a << 2).U)
+    step(1)
+    expect(r == e, s"mem($a) = $r (expected $e)")
+  }
+}
+
 class MemoryTests extends ChiselFlatSpec {
+  val args = Array("--fint-write-vcd")
   "Memory" should "handle writes and reads correctly" in {
-    val args = Array("--fint-write-vcd")
     iotesters.Driver.execute(args, () => new Memory(1024)) {
       c => new MemoryTester(c)
     } should be (true)
   }
   "ReadOnlyMemory" should "properly initialize and handle reads" in {
-    val args = Array("--fint-write-vcd")
     iotesters.Driver.execute(args, () => new ReadOnlyMemory(ReadOnlyMemoryTester.initData)) {
       c => new ReadOnlyMemoryTester(c)
     } should be (true)
+  }
+  "VerilogInitializedMemory" should "get properly initialized" in {
+    iotesters.Driver.execute(Array("--backend-name", "verilator"),
+      () => new VerilogInitializedMemory("verilog_initialized_memory.hex")) {
+        c => new VerilogInitializedMemoryTester(c)
+      } should be (true)
   }
 }
