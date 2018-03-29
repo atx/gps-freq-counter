@@ -29,8 +29,8 @@ foreach (target_name ${_targets})
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	)
 	add_custom_target (${target_name}.memh ALL
-		DEPENDS ${target_name}
-		COMMAND ${CMAKE_SOURCE_DIR}/bintoverilog.py $<TARGET_FILE:${target_name}> $<TARGET_FILE:${target_name}>.memh
+		DEPENDS ${target_name}.bin
+		COMMAND ${CMAKE_SOURCE_DIR}/bintoverilog.py $<TARGET_FILE:${target_name}>.bin $<TARGET_FILE:${target_name}>.memh
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	)
 endforeach ()
