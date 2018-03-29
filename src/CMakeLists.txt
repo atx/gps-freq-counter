@@ -23,9 +23,14 @@ add_executable (test_spi test_spi.c reset.c spi.c reset.s linker.ld)
 
 get_property (_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
 foreach (target_name ${_targets})
-	add_custom_command (
-		TARGET ${target_name} POST_BUILD
+	add_custom_target (${target_name}.bin ALL
+		DEPENDS ${target_name}
 		COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${target_name}> $<TARGET_FILE:${target_name}>.bin
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+	)
+	add_custom_target (${target_name}.memh ALL
+		DEPENDS ${target_name}
+		COMMAND ${CMAKE_SOURCE_DIR}/bintoverilog.py $<TARGET_FILE:${target_name}> $<TARGET_FILE:${target_name}>.memh
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	)
 endforeach ()
