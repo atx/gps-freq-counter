@@ -10,7 +10,7 @@ class SPITester(c: SPI) extends BusTester(c, c.io.bus) {
   def readSPIByte() : Int = {
     var ret = 0x00
     for (_ <- 0 to 7) {
-      stepWhile(peek(c.io.spi.clk) == 1, 10) {}
+      stepWhile(peek(c.io.spi.clk) == 1, 10) { }
       nSteps(5) {
         expect(c.io.spi.clk, false.B)
       }
@@ -44,13 +44,16 @@ class SPITester(c: SPI) extends BusTester(c, c.io.bus) {
       var read = readSPIByte()
       expect(read == expected, s"read != expected ($read != $expected)")
       expect(c.io.status.idle, false.B)
+      expect(c.io.spi.cs, false.B)
     }
 
-    stepWhile(peek(c.io.status.idle) == 0, 5) {
+    nSteps(5) {
+      expect(c.io.spi.cs, false.B)
       expect(c.io.spi.clk, true.B)
     }
 
-    nSteps(30) {
+    nSteps(50) {
+      expect(c.io.spi.cs, true.B)
       expect(c.io.spi.mosi, true.B)
       expect(c.io.spi.clk, true.B)
     }

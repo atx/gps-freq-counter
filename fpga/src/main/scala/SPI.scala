@@ -8,6 +8,7 @@ import chisel3.util._
 class SPIBundle extends Bundle {
   val mosi = Output(Bool())
   val clk = Output(Bool())
+  val cs = Output(Bool())
 }
 
 
@@ -21,10 +22,11 @@ class SPI(val divider: Int = 10, val memSize: Int = 256) extends Module {
     }
   })
 
-  val sIdle :: sFirst :: sRun :: Nil = Enum(3)
+  val sIdle :: sFirst :: sRun :: sLast :: Nil = Enum(4)
 
   val state = RegInit(sIdle)
   io.status.idle := state === sIdle
+  io.spi.cs := state === sIdle || state === sLast
 
   val baseCntr = Counter(divider)
 
@@ -64,7 +66,7 @@ class SPI(val divider: Int = 10, val memSize: Int = 256) extends Module {
       io.spi.clk := baseCntr.value >= (divider / 2).U
       when (baseCntr.inc()) {
         when (byteCount === 1.U && ptr % 8.U === 0.U) {
-          state := sIdle
+          state := sLast
         } otherwise {
           when (ptr % 8.U === 0.U) {
             byteCount := byteCount - 1.U
@@ -77,6 +79,11 @@ class SPI(val divider: Int = 10, val memSize: Int = 256) extends Module {
 
           ptr := ptr + 1.U
         }
+      }
+    }
+    is (sLast) {
+      when (baseCntr.inc()) {
+        state := sIdle
       }
     }
   }
