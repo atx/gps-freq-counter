@@ -4,14 +4,18 @@ package gfc
 import chisel3._
 import chisel3.util._
 
+
+class SPIBundle extends Bundle {
+  val mosi = Output(Bool())
+  val clk = Output(Bool())
+}
+
+
 class SPI(val divider: Int = 10, val memSize: Int = 256) extends Module {
   require(divider % 2 == 0)
   val io = IO(new Bundle {
     val bus = Flipped(new MemoryBus)
-    val spi = new Bundle {
-      val mosi = Output(Bool())
-      val clk = Output(Bool())
-    }
+    val spi = new SPIBundle
     val status = new Bundle {
       val idle = Output(Bool())
     }
