@@ -75,7 +75,7 @@ class PicoRVIntegrationTester(c: PicoRVIntegrationTestWrapper) extends PeekPokeT
 
 
 abstract class PicoRVBaseFirmwareTestWrapper(resourceName: String) extends Module {
-  val fwMem = ReadOnlyMemory.fromResource(resourceName)
+  val fwMem = Module(new VerilogInitializedMemory(resourceName))
   val rwMem = Module(new Memory(1024 * 12/4))
   val stackMem = Module(new Memory(1024))
 
@@ -90,7 +90,7 @@ abstract class PicoRVBaseFirmwareTestWrapper(resourceName: String) extends Modul
   val memoryMux = MemoryMux.build(picorv.io.mem, mmDevicesBase ++ mmDevices)
 }
 
-class PicoRVFibonnaciTestWrapper extends PicoRVBaseFirmwareTestWrapper("picorv_test_fib.bin") {
+class PicoRVFibonnaciTestWrapper extends PicoRVBaseFirmwareTestWrapper("picorv_test_fib.memh") {
   val io = IO(new Bundle {
     val out = Output(UInt(32.W))
   })
@@ -104,11 +104,11 @@ class PicoRVFibonnaciTestWrapper extends PicoRVBaseFirmwareTestWrapper("picorv_t
 }
 
 class PicoRVFibonnaciTester(c: PicoRVFibonnaciTestWrapper) extends PeekPokeTester(c) {
-  step(7000)
+  step(20000)
   expect(c.io.out, 0x2f4b)
 }
 
-class PicoRVSPITestWrapper extends PicoRVBaseFirmwareTestWrapper("picorv_test_spi.bin") {
+class PicoRVSPITestWrapper extends PicoRVBaseFirmwareTestWrapper("picorv_test_spi.memh") {
   val io = IO(new Bundle {
     val spi = new Bundle {
       val mosi = Output(Bool())
@@ -143,7 +143,7 @@ class PicoRVSPITester(c: PicoRVSPITestWrapper) extends BetterPeekPokeTester(c) {
   val expectedData = List(
 	0xaa, 0x1d, 0xbe, 0xef, 0xaa, 0x10, 0x41
   )
-  stepWhile(peek(c.io.spi.clk) == 1, 3000) {}
+  stepWhile(peek(c.io.spi.clk) == 1, 10000) {}
 
   for (exp <- expectedData) {
     val read = readSPIByte()
