@@ -4,6 +4,7 @@ package gfc
 import chisel3._
 import chisel3.iotesters.{ChiselFlatSpec, PeekPokeTester}
 
+
 abstract class PicoRVBaseTester(c: PicoRV) extends PeekPokeTester(c) {
   val memory: Array[BigInt]
   def runProcessor(numSteps: Int) = {
@@ -29,6 +30,7 @@ abstract class PicoRVBaseTester(c: PicoRV) extends PeekPokeTester(c) {
   }
 }
 
+
 class PicoRVSimpleTester(c: PicoRV) extends PicoRVBaseTester(c) {
   val memory = Array[BigInt](
     0xdeadc5b7l,  // lui a1,0xdeadc
@@ -44,6 +46,7 @@ class PicoRVSimpleTester(c: PicoRV) extends PicoRVBaseTester(c) {
 
   assert(memory(6) == 0xdeadbeefl)
 }
+
 
 class PicoRVIntegrationTestWrapper extends Module {
  val io = IO(new Bundle {
@@ -74,68 +77,43 @@ class PicoRVIntegrationTester(c: PicoRVIntegrationTestWrapper) extends PeekPokeT
 }
 
 
-abstract class PicoRVBaseFirmwareTestWrapper(resourceName: String) extends Module {
-  val fwMem = Module(new VerilogInitializedMemory(resourceName))
-  val rwMem = Module(new Memory(1024 * 12/4))
-  val stackMem = Module(new Memory(1024))
+class TopWrapper(firmwareFile: String) extends Module {
 
-  val mmDevicesBase = List(
-    (0x00000000l, 18, fwMem.io.bus),
-    (0x20000000l, 18, rwMem.io.bus),
-    (0xfffff000l, 20, stackMem.io.bus)
-    )
-  val mmDevices: Seq[Tuple3[Long, Int, MemoryBus]]
+  implicit val conf = TopConfig(
+    isSim = true,
+    firmwareFile = firmwareFile,
+    mainClockFreq = 100000000,
+    spiClockFreq =   10000000
+  )
+  val top = Module(new Top)
 
-  val picorv = Module(new PicoRV)
-  val memoryMux = MemoryMux.build(picorv.io.mem, mmDevicesBase ++ mmDevices)
+  val io = IO(top.io.cloneType)
+  io <> top.io
+
+  top.io.oscillator := clock
+  top.io.debug.reset := reset
 }
 
-class PicoRVFibonnaciTestWrapper extends PicoRVBaseFirmwareTestWrapper("picorv_test_fib.memh") {
-  val io = IO(new Bundle {
-    val out = Output(UInt(32.W))
-  })
 
-  lazy val outReg = Module(new Register)
-  io.out := outReg.io.value
-
-  lazy val mmDevices = List(
-    (0x40000000l, 28, outReg.io.bus)
-    )
+class PicoRVFibTester(c: TopWrapper) extends PeekPokeTester(c) {
+  step(10000)
+  expect(c.io.debug.reg, 0x2f4b)
 }
 
-class PicoRVFibonnaciTester(c: PicoRVFibonnaciTestWrapper) extends PeekPokeTester(c) {
-  step(20000)
-  expect(c.io.out, 0x2f4b)
-}
 
-class PicoRVSPITestWrapper extends PicoRVBaseFirmwareTestWrapper("picorv_test_spi.memh") {
-  val io = IO(new Bundle {
-    val spi = new Bundle {
-      val mosi = Output(Bool())
-      val clk = Output(Bool())
-    }
-  })
-
-  lazy val spi = Module(new SPI)
-  io.spi <> spi.io.spi
-
-  lazy val mmDevices = List(
-    (0x30000000l, 22, spi.io.bus)
-    )
-}
-
-class PicoRVSPITester(c: PicoRVSPITestWrapper) extends BetterPeekPokeTester(c) {
+class PicoRVSPITester(c: TopWrapper) extends BetterPeekPokeTester(c) {
+  val spi = c.io.oled.spi
 
   // TODO: DRY... (SPITests)
   def readSPIByte() : Int = {
     var ret = 0x00
     for (_ <- 0 to 7) {
-      stepWhile(peek(c.io.spi.clk) == 1, 10) {}
+      stepWhile(peek(spi.clk) == 1, 10) {}
       nSteps(5) {
-        expect(c.io.spi.clk, false.B)
+        expect(spi.clk, false.B)
       }
-      expect(c.io.spi.clk, true.B)
-      ret = (ret << 1) | peek(c.io.spi.mosi).toInt
+      expect(spi.clk, true.B)
+      ret = (ret << 1) | peek(spi.mosi).toInt
     }
     return ret
   }
@@ -143,12 +121,20 @@ class PicoRVSPITester(c: PicoRVSPITestWrapper) extends BetterPeekPokeTester(c) {
   val expectedData = List(
 	0xaa, 0x1d, 0xbe, 0xef, 0xaa, 0x10, 0x41
   )
-  stepWhile(peek(c.io.spi.clk) == 1, 10000) {}
+  stepWhile(peek(spi.clk) == 1, 10000) {}
 
   for (exp <- expectedData) {
     val read = readSPIByte()
     expect(read == exp, s"$read == $exp")
   }
+
+  step(100)
+}
+
+
+class PicoRVMainTester(c: TopWrapper) extends PeekPokeTester(c) {
+  // TODO: Setup inputs
+  step(10000000)
 }
 
 
@@ -163,15 +149,21 @@ class PicoRVTests extends ChiselFlatSpec {
     iotesters.Driver.execute(args, () => new PicoRVIntegrationTestWrapper) {
       c => new PicoRVIntegrationTester(c)
     } should be (true)
+   }
+
+  def runFirmware(firmwareFile: String, testerGen: TopWrapper => PeekPokeTester[TopWrapper]) = {
+    iotesters.Driver.execute(args, () => new TopWrapper(firmwareFile))(testerGen) should be (true)
   }
-  "PicoRV" should "produce correct result with test1" in {
-    iotesters.Driver.execute(args, () => new PicoRVFibonnaciTestWrapper) {
-      c => new PicoRVFibonnaciTester(c)
-    } should be (true)
+
+  "PicoRV" should "produce correct result in test_fib" in {
+    runFirmware("picorv_test_fib.memh", new PicoRVFibTester(_))
   }
-  "PicoRV" should "correctly interact with the SPI peripheral" in {
-    iotesters.Driver.execute(args, () => new PicoRVSPITestWrapper) {
-      c => new PicoRVSPITester(c)
-    } should be (true)
+
+  "PicoRV" should "produce correct result in test_spi" in {
+    runFirmware("picorv_test_spi.memh", new PicoRVSPITester(_))
+  }
+
+  "PicoRV" should "run the main program" in {
+    runFirmware("gfc.memh", new PicoRVMainTester(_))
   }
 }

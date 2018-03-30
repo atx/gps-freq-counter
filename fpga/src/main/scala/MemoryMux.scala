@@ -13,6 +13,10 @@ object MemoryMux {
     mux.io.master <> master
     return mux
   }
+
+  def singulars(base: Long, devs: MemoryBus*) : Seq[Tuple3[Long, Int, MemoryBus]] = {
+    devs.zipWithIndex.map { case (d, i) => (base + 4*i, 30, d) }
+  }
 }
 
 class MemoryMux(slave_prefixes: Seq[(Long, Int)]) extends Module {
