@@ -38,12 +38,9 @@ class MemoryMux(slave_prefixes: Seq[(Long, Int)]) extends Module {
     io.slaves(i).valid := selectors(i) && io.master.valid
     io.slaves(i).addr := io.master.addr & ("b" + "1"*rest_width).U
   }
+  val validAddress = selectors.asUInt =/= 0.U
 
-  io.master.ready := MuxCase(false.B,
-    (io.slaves zip selectors) map { case (sio, sel) =>  sel -> sio.ready})
-
-  io.master.rdata := MuxCase("x01020304".U,
-    (io.slaves zip selectors) map { case (sio, sel) =>
-      sel -> sio.rdata
-    })
+  // TODO: More sophisticated invalid address handling?
+  io.master.ready := Mux(validAddress, Mux1H(selectors zip io.slaves.map(_.ready)), false.B)
+  io.master.rdata := Mux1H(selectors zip io.slaves.map(_.rdata))
 }
