@@ -77,14 +77,13 @@ class Top(implicit val conf: TopConfig) extends RawModule {
     } else { null }
   })
 
-  // PLL broken for now
-  // Most likely caused by the input oscillator being connected to the wrong input
-  // (clk3p is _not_ connected to PLL1, which is the only PLL we have anyway)
-  //val pllBlock = Module(new altera_altpll)
-  //pllBlock.io.inclk0 := io.oscillator
-  //val mainClock = pllBlock.io.c0
-
-  val mainClock = io.oscillator
+  val mainClock = if (conf.isSim) {
+    io.oscillator
+  } else {
+    val alteraPll = Module(new altera_altpll)
+    alteraPll.io.inclk0 := io.oscillator
+    alteraPll.io.c0
+  }
 
   val reset = if (conf.isSim) {
     io.debug.reset
@@ -149,8 +148,8 @@ object Main extends App {
   implicit val conf = TopConfig(
     isSim = false,
     firmwareFile = "gfc.memh",
-    mainClockFreq = 30000000,
-    spiClockFreq =   3000000
+    mainClockFreq = 90000000,
+    spiClockFreq =   7500000
     )
   chisel3.Driver.execute(defaultArgs ++ args, () => new Top)
 }
