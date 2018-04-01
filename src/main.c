@@ -6,25 +6,36 @@
 #include "regs.h"
 #include "utils.h"
 #include "oled.h"
+#include "ui.h"
+
+
+#define TICK_EVERY		100
 
 void main()
 {
 	oled_init();
-	const unsigned int scale = 8;
-	unsigned int shift = 0;
+	ui_init();
+	uint32_t next_tick = time_ms();
 	while (true) {
-		output_high(OUTPUT_LED_A);
-		for (unsigned int y = 0; y < OLED_HEIGHT; y++) {
-			for (unsigned int x = 0; x < OLED_WIDTH; x++) {
-				oled_draw_pixel(x, y, ((x+shift)/scale) % 2 == ((y+shift)/scale) % 2);
-			}
+		uint32_t ackr = ack_status();
+		if (ackr & ACK_BUTTON_DOWN) {
+			ui_on_key_down();
 		}
-		shift = (shift + 1) % scale;
-		output_low(OUTPUT_LED_A);
-		output_high(OUTPUT_LED_B);
+		if (ackr & ACK_BUTTON_UP) {
+			ui_on_key_up();
+		}
+		ack_write(ackr);
+
+		if (time_ms() < next_tick) {
+			continue;
+		}
+
+		output_high(OUTPUT_LED_A);
+		next_tick = time_ms() + TICK_EVERY;
+
+		ui_on_frame();
 		oled_flush();
-		while (!status_is_set(STATUS_SPI_IDLE)) {}
-		output_low(OUTPUT_LED_B);
-		nop_loop(100000);
+
+		output_low(OUTPUT_LED_A);
 	}
 }

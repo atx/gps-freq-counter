@@ -124,7 +124,7 @@ void oled_command(uint8_t cmd)
 }
 
 
-void oled_draw_pixel(unsigned int x, unsigned int y, bool on)
+inline void oled_draw_pixel(unsigned int x, unsigned int y, bool on)
 {
 	volatile uint8_t *p = &framebuff[x + (y/8)*OLED_WIDTH];
 	uint8_t mask = 1 << (y % 8);
@@ -132,6 +132,34 @@ void oled_draw_pixel(unsigned int x, unsigned int y, bool on)
 		*p |=  mask;
 	} else {
 		*p &= ~mask;
+	}
+}
+
+
+void oled_blit(const uint8_t *d, unsigned int w, unsigned int h,
+			   unsigned int x, unsigned int y,
+			   enum oled_blit_mode mode)
+{
+	// TODO: Optimize this
+	for (unsigned int dy = 0; dy < h; dy++) {
+		for (unsigned int dx = 0; dx < w; dx++) {
+			bool pixel = !!(d[dx + (dy/8)*w] & BIT(dy % 8));
+			if (mode == OLED_BLIT_INVERT) {
+				pixel = !pixel;
+			}
+			oled_draw_pixel(x + dx, y + dy, pixel);
+		}
+	}
+}
+
+
+void oled_fill(unsigned int x, unsigned int y, unsigned int w, unsigned int h, enum oled_blit_mode mode)
+{
+	// TODO: Optimize this
+	for (unsigned int dx = 0; dx < w; dx++) {
+		for (unsigned int dy = 0; dy < h; dy++) {
+			oled_draw_pixel(x + dx, y + dy, mode == OLED_BLIT_INVERT);
+		}
 	}
 }
 

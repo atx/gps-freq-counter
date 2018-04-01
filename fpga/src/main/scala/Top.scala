@@ -69,6 +69,8 @@ class Top(implicit val conf: TopConfig) extends RawModule {
       val b = Output(Bool())
     }
 
+    val button = Input(Bool())
+
     val debug = if (conf.isSim) {
       new Bundle {
         val reset = Input(Bool())
@@ -124,6 +126,11 @@ class Top(implicit val conf: TopConfig) extends RawModule {
     // worth caring about too much
     val msTimer = Module(new TimerRegister(conf.mainClockFreq / 1000))
 
+    val buttonProcessed = Debouncer(Utils.synchronize(io.button), conf.mainClockFreq / 2000, 10)
+    val ackReg = AcknowledgeRegister.build(List(
+      buttonProcessed, !buttonProcessed
+      ))
+
     var mmDevices =
       List(
         (0x00000000l, 18, fwMem.io.bus),
@@ -133,7 +140,7 @@ class Top(implicit val conf: TopConfig) extends RawModule {
       ) ++
       MemoryMux.singulars(
         0x31000000l,
-        statusReg.io.bus, outputReg.io.bus, msTimer.io.bus, uart.io.bus, pps.io.bus
+        statusReg.io.bus, outputReg.io.bus, msTimer.io.bus, ackReg.io.bus, uart.io.bus, pps.io.bus
       )
     if (conf.isSim) {
       val debugReg = Module(new OutputRegister(0.U(32.W)))

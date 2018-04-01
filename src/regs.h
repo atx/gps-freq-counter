@@ -29,3 +29,24 @@ static inline void output_low(uint32_t mask)
 {
 	OUTPUT_REG &= ~mask;
 }
+
+#define MSTIMER_REG			(*((volatile uint32_t *)0x31000008l))
+
+static inline uint32_t time_ms()
+{
+	return MSTIMER_REG;
+}
+
+#define ACK_REG				(*((volatile uint32_t *)0x3100000cl))
+#define ACK_BUTTON_DOWN		BIT(0)
+#define ACK_BUTTON_UP		BIT(1)
+
+static inline uint32_t ack_status()
+{
+	return ACK_REG;
+}
+
+static inline void ack_write(uint32_t val)
+{
+	ACK_REG = val;
+}

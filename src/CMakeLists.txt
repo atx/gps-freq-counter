@@ -13,19 +13,29 @@ set (CMAKE_OBJCOPY		"${CROSS_COMPILE}objcopy")
 set (CMAKE_SIZE			"${CROSS_COMPILE}size")
 
 set (CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -march=rv32e -mabi=ilp32e")
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -ggdb -march=rv32e -mabi=ilp32e -ffunction-sections")
-set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nostartfiles -T ${CMAKE_SOURCE_DIR}/linker.ld -Wl,--gc-sections")
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -ggdb -march=rv32e -mabi=ilp32e -ffunction-sections -mstrict-align")
+set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -specs=nano.specs -nostartfiles -T ${CMAKE_SOURCE_DIR}/linker.ld -Wl,--gc-sections")
 
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-main-return-type -Wno-main -Wno-unused-parameter")
 
-set (BASE_CSRCS oled.c spi.c reset.c reset.s linker.ld)
+add_custom_command (
+	OUTPUT sprites_data.h
+	COMMAND ${CMAKE_SOURCE_DIR}/generate_sprites.sh ${CMAKE_BINARY_DIR}/sprites_data.h
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+	DEPENDS ${CMAKE_SOURCE_DIR}/generate_sprites.sh
+	COMMENT "Generating sprites"
+)
 
-add_executable (gfc main.c ${BASE_CSRCS})
-add_executable (test_fib test_fib.c ${BASE_CSRCS})
-add_executable (test_spi test_spi.c ${BASE_CSRCS})
+include_directories (${CMAKE_BINARY_DIR})
+
+set (COMMON_CSRCS reset.c reset.s linker.ld)
+
+add_executable (gfc main.c sprites_data.h ui.c oled.c spi.c ${COMMON_CSRCS})
+add_executable (test_fib test_fib.c ${COMMON_CSRCS})
+add_executable (test_spi test_spi.c spi.c ${COMMON_CSRCS})
 
 get_property (_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
-foreach (target_name ${_targets})
+foreach (target_name gfc test_fib test_spi)
 	add_custom_target (${target_name}.bin ALL
 		DEPENDS ${target_name}
 		COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${target_name}> $<TARGET_FILE:${target_name}>.bin
