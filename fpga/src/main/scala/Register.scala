@@ -59,11 +59,8 @@ class OutputRegister(initVal: UInt) extends Module {
   io.bus.rdata := reg
   io.bus.ready := true.B
 
-  val writes = (0 to 3) map { i => Mux(io.bus.wstrb(i), io.bus.wdata, reg)(8*(i+1)-1, 8*i) }
-  val maskedWrite = Cat(writes(3), writes(2), writes(1), writes(0))
-
   when (io.bus.valid && io.bus.wstrb =/= 0.U) {
-    reg := maskedWrite
+    reg := Utils.maskedWrite(io.bus, reg)
   }
 }
 
@@ -82,4 +79,35 @@ class TimerRegister(val divider: Int) extends Module {
   when (Counter(divider).inc()) {
     reg := reg + 1.U
   }
+}
+
+
+object AcknowledgeRegister {
+  def build(inputs: Seq[Bool]) : AcknowledgeRegister = {
+    val a = Module(new AcknowledgeRegister(inputs.length))
+    for ((b, i) <- inputs.zipWithIndex) {
+      a.io.inputs(i) := false.B
+    }
+    return a
+  }
+}
+
+
+class AcknowledgeRegister(val width: Int = 32) extends Module {
+  val io = IO(new Bundle {
+    val bus = Flipped(new MemoryBus)
+    val inputs = Input(Vec(width, Bool()))
+  })
+
+  val reg = RegInit(0.U(width.W))
+
+  // Rising edges
+  val iBits = io.inputs.toBits.asUInt
+  val edges = iBits ^ RegNext(iBits) & iBits
+  val acks = Mux(io.bus.valid, Utils.maskedWrite(io.bus, 0.U), 0.U)
+
+  reg := (reg & ~acks) | edges
+
+  io.bus.ready := true.B
+  io.bus.rdata := reg
 }
