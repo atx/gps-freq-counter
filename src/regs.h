@@ -40,6 +40,8 @@ static inline uint32_t time_ms()
 #define ACK_REG				(*((volatile uint32_t *)0x3100000cl))
 #define ACK_BUTTON_DOWN		BIT(0)
 #define ACK_BUTTON_UP		BIT(1)
+#define ACK_UART_RXFULL		BIT(2)
+#define ACK_UART_TXEMPTY	BIT(3)
 
 static inline uint32_t ack_status()
 {

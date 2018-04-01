@@ -92,6 +92,10 @@ struct ui_state {
 		unsigned int choices[MENU_ENTRY_COUNT];  // The actually currently choosen values
 		unsigned int prechoice;  // Choice in a currently open menu
 	} menu;
+	struct {
+		bool has_fix;
+		unsigned int n_sats;
+	} gps;
 };
 
 static struct ui_state ui_state = {
@@ -103,6 +107,10 @@ static struct ui_state ui_state = {
 			0, 0, 0
 		},
 		.prechoice = 0
+	},
+	.gps = {
+		.has_fix = false,
+		.n_sats = 0
 	}
 };
 
@@ -167,26 +175,28 @@ static void render_menu_bar()
 	const unsigned int y = OLED_HEIGHT - sprite_menu_button.height;
 	const unsigned int button_width = sprite_menu_button.width + 1;
 
-	oled_fill(0, y, OLED_WIDTH, sprite_menu_button.height, OLED_BLIT_NORMAL);
-
 	// Render the root menu in the left-bottom corner
-	for (unsigned int i = 0, x = 0; i < ARRAY_SIZE(menu_entries); i++) {
+	unsigned int lx = 0;
+	for (unsigned int i = 0; i < ARRAY_SIZE(menu_entries); i++) {
 		bool selected = ui_state.menu.selected == i;
 		const char *str = menu_entries[i].choices[ui_state.menu.choices[i]];
-		render_menu_button(str, x, y, selected);
-		x += button_width;
+		render_menu_button(str, lx, y, selected);
+		lx += button_width;
 	}
 
 	// Render the secondary menu in the right-bottom corner
+	unsigned int rx = OLED_WIDTH;
 	if (ui_state.menu.open) {
 		const struct menu_entry_descriptor *desc = &menu_entries[ui_state.menu.selected];
-		unsigned int x = OLED_WIDTH - sprite_menu_button.width;
+		rx = OLED_WIDTH - sprite_menu_button.width;
 		for (unsigned int i = 0; desc->choices[i] != NULL; i++) {
 			bool selected = ui_state.menu.prechoice == i;
-			render_menu_button(desc->choices[i], x, y, selected);
-			x -= button_width;
+			render_menu_button(desc->choices[i], rx, y, selected);
+			rx -= button_width;
 		}
+		rx += button_width;
 	}
+	oled_fill(lx, y, rx - lx, sprite_menu_button.height, OLED_BLIT_NORMAL);
 }
 
 
@@ -196,6 +206,20 @@ static void render_status_key(enum key_state state)
 		state == KEY_STATE_NONE ? &sprite_status_key_1 :
 		(state == KEY_STATE_SHORT ? &sprite_status_key_2 : &sprite_status_key_3);
 	blit_sprite(s, 0, 0, OLED_BLIT_NORMAL);
+}
+
+
+static void render_status_gps()
+{
+	const unsigned int x = 14;
+	const unsigned int y = 0;
+	const struct sprite *s = ui_state.gps.has_fix ? &sprite_status_gps_fix : &sprite_status_gps_nofix;
+	blit_sprite(s, x, y, OLED_BLIT_NORMAL);
+	unsigned int idx = ui_state.gps.n_sats;
+	if (idx > 10) {
+		idx = 10;  // This is the '+' chracter
+	}
+	blit_font(&font_tiny_digits, idx, x + 2, y + 5, OLED_BLIT_NORMAL);
 }
 
 
@@ -231,6 +255,7 @@ void ui_init()
 {
 	render_menu_bar();
 	render_status_key(KEY_STATE_NONE);
+	render_status_gps();
 }
 
 
@@ -265,5 +290,13 @@ void ui_on_frame()
 
 	char dst[20];
 	sprintf(dst, "time = %lu", time_ms());
-	blit_string(&font_small_ascii, dst, 10, 30, OLED_BLIT_NORMAL, 20);
+	blit_string(&font_small_ascii, dst, 10, 20, OLED_BLIT_NORMAL, 20);
+}
+
+
+void ui_on_gps_update(bool has_fix, unsigned int n_sats)
+{
+	ui_state.gps.has_fix = has_fix;
+	ui_state.gps.n_sats = n_sats;
+	render_status_gps();
 }

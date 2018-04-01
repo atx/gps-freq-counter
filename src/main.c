@@ -4,6 +4,7 @@
 #include <stdbool.h>
 
 #include "regs.h"
+#include "uart.h"
 #include "utils.h"
 #include "oled.h"
 #include "ui.h"
@@ -23,6 +24,12 @@ void main()
 		}
 		if (ackr & ACK_BUTTON_UP) {
 			ui_on_key_up();
+		}
+		if (ackr & ACK_UART_RXFULL) {
+			uart_process_rx();
+		}
+		if (ackr & ACK_UART_TXEMPTY) {
+			uart_process_tx();
 		}
 		ack_write(ackr);
 
