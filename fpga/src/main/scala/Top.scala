@@ -104,7 +104,7 @@ class Top(implicit val conf: TopConfig) extends RawModule {
     val spi = Module(new SPI(divider = (conf.mainClockFreq / conf.spiClockFreq), memSize = 260))
     io.oled.spi <> spi.io.spi
     // TODO: Calculate the dividers from base clock
-    val uart = Module(new UART(9375, 15))
+    val uart = Module(new UART(625, 15))
     io.uart <> uart.io.uart
     val pps = Module(new PPSCounter)
     pps.io.pps := Utils.synchronize(io.pps)
@@ -128,7 +128,8 @@ class Top(implicit val conf: TopConfig) extends RawModule {
 
     val buttonProcessed = Debouncer(Utils.synchronize(io.button), conf.mainClockFreq / 2000, 10)
     val ackReg = AcknowledgeRegister.build(List(
-      buttonProcessed, !buttonProcessed
+      buttonProcessed, !buttonProcessed,
+      uart.io.status.rxFull, uart.io.status.txEmpty
       ))
 
     var mmDevices =
@@ -140,7 +141,8 @@ class Top(implicit val conf: TopConfig) extends RawModule {
       ) ++
       MemoryMux.singulars(
         0x31000000l,
-        statusReg.io.bus, outputReg.io.bus, msTimer.io.bus, ackReg.io.bus, uart.io.bus, pps.io.bus
+        statusReg.io.bus, outputReg.io.bus, msTimer.io.bus, ackReg.io.bus,
+        uart.io.bus, pps.io.bus
       )
     if (conf.isSim) {
       val debugReg = Module(new OutputRegister(0.U(32.W)))

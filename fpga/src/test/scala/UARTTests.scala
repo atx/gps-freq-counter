@@ -6,8 +6,8 @@ import chisel3._
 
 class UARTTXTester(c: UART) extends BusTester(c, c.io.bus) {
 
-  def readStatus() : BigInt = {
-    (busRead(0x0.U) >> 16) & 0xff
+  def readTxEmpty() : BigInt = {
+    peek(c.io.status.txEmpty)
   }
   def writeTx(v: BigInt) = {
     busWrite(0x0.U, v.U, "b0001".U)
@@ -49,7 +49,7 @@ class UARTTXTester(c: UART) extends BusTester(c, c.io.bus) {
   // Multiple bytes back to back
   val exs = List(0xaa, 0x6d)
   writeTx(exs(0))
-  stepWhile((readStatus() & 0x01) == 1, c.divider * 2) {}
+  stepWhile(readTxEmpty() == 0, c.divider * 2) {}
   writeTx(exs(1))
   for (ex <- exs) {
     val data = rxByte()
@@ -61,9 +61,7 @@ class UARTTXTester(c: UART) extends BusTester(c, c.io.bus) {
 
 class UARTRXTester(c: UART) extends BusTester(c, c.io.bus, readTimeout=0) {
 
-  def readRxFull() : BigInt = {
-    (peek(c.io.bus.rdata) >> 17) & 0x1
-  }
+  def readRxFull() : BigInt = peek(c.io.status.rxFull)
   def readRx() : BigInt = {
     (peek(c.io.bus.rdata) >> 8) & 0xff
   }
@@ -94,24 +92,23 @@ class UARTRXTester(c: UART) extends BusTester(c, c.io.bus, readTimeout=0) {
 
     for (dataByte <- data) {
       val dtxExtended = (1 << 9) | (dataByte << 1) | 0
+      var gotflag = false
       for (n <- 0 to 9) {
         val bit = (((dtxExtended >> n) & 0x1) == 1)
         poke(c.io.uart.rx, bit.B)
-        if (n != 9) {  // The data should appear before the stop bit
-          step(baudRate)
+
+        nSteps(baudRate) {
+          if (peek(c.io.status.rxFull) == 1) {
+            expect(n == 8, s"rxFull flag after bit $n")
+            gotflag = true
+          }
         }
       }
+      expect(gotflag, s"rxFull at the end")
 
-      expect(readRxFull() == 1, s"rxFull flag should be set at this point")
       val dataRx = readRx()
       expect(dataRx == dataByte, s"read data ($dataRx == $dataByte)")
-
-      // Clear the rxFull flag by doing a proper single cycle read
-      setupBusRead(0x0.U)
-      step(1)
-      expect(readRxFull() == 0, s"rxFull flag should be cleared after a read bus cycle")
-      setupBusIdle()
-      step(baudRate - 1)
+      step(baudRate)
     }
     poke(c.io.uart.rx, true.B)
   }

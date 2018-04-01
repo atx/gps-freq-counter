@@ -14,25 +14,32 @@ class UART(val divider: Int = 32, val perBit: Int = 16) extends Module {
   val io = IO(new Bundle {
     val bus = Flipped(new MemoryBus)
     val uart = new UARTBundle
+    val status = new Bundle {
+      val rxFull = Output(Bool())
+      val txEmpty = Output(Bool())
+    }
   })
 
   val writeBitCounter = Reg(UInt(4.W), init=0.U)
   val txData = Reg(UInt(8.W), init=0.U)
   val txDataR = Reg(UInt(8.W), init=0.U)
-  val txFull = RegInit(false.B)
+  val txEmpty = RegInit(true.B)
   val baudWriteCntr = Counter(perBit)
   val baseWriteCntr = Counter(divider)
+  io.status.txEmpty := txEmpty
 
   val receiveBitCounter = Reg(UInt(4.W), init=0.U)
   val startBitCounter = Reg(UInt(log2Up(perBit / 2).W), init=0.U)
   val rxData = Reg(UInt(8.W), init=0.U)
   val rxDataR = Reg(UInt(8.W))
-  val rxFull = RegInit(false.B)
   val baudReadCntr = Counter(perBit)
   val baseReadCntr = Counter(divider)
+  val rxFull = RegInit(false.B)
+  rxFull := false.B
+  io.status.rxFull := RegNext(rxFull)
 
-  io.bus.rdata := Cat(rxFull, txFull, rxData, txData)
-  io.bus.ready := true.B
+  io.bus.rdata := RegNext(Cat(rxData, txData))
+  io.bus.ready := RegNext(io.bus.valid)
 
   val rxSignal = Utils.synchronize(io.uart.rx)
   val txReg = RegInit(true.B)
@@ -70,15 +77,11 @@ class UART(val divider: Int = 32, val perBit: Int = 16) extends Module {
       }
     }
   }
-  when (io.bus.valid && io.bus.wstrb === 0.U) {
-    // The reader needs to take it from here
-    rxFull := false.B
-  }
 
   when (baseWriteCntr.inc()) {
-    when (writeBitCounter === 0.U && txFull) {
+    when (writeBitCounter === 0.U && !txEmpty) {
       txDataR := txData
-      txFull := false.B
+      txEmpty := true.B
       writeBitCounter := 10.U
       baudWriteCntr.value := 0.U
     } .elsewhen (writeBitCounter > 0.U && baudWriteCntr.inc()) {
@@ -93,11 +96,11 @@ class UART(val divider: Int = 32, val perBit: Int = 16) extends Module {
       writeBitCounter := writeBitCounter - 1.U
     }
   }
-  when (io.bus.valid && io.bus.wstrb(0) && !txFull) {
+  when (io.bus.valid && io.bus.wstrb(0) && txEmpty) {
     // Our TX register is getting written to
-    // It's the writer responsibility to check the txFull flag before writing
+    // It's the writer responsibility to check the txEmpty flag before writing
     // TODO: Maybe block the read signal instead?
     txData := io.bus.wdata(7, 0)
-    txFull := true.B
+    txEmpty := false.B
   }
 }
