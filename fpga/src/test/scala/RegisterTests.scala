@@ -76,11 +76,27 @@ class OutputRegisterTester(c: OutputRegisterWrapper) extends BusTester(c, c.io.b
 }
 
 
+class TimerRegisterTester(c: TimerRegister) extends BetterPeekPokeTester(c) {
+  expect(c.io.bus.rdata, 0)
+  expect(c.io.bus.ready, true)
+  for (i <- 0 to 1000) {
+    nSteps(c.divider) {
+      expect(c.io.bus.rdata, i)
+    }
+  }
+}
+
+
 class RegisterTests extends ChiselFlatSpec {
   val args = Array("--fint-write-vcd")
   "OutputRegister" should "output bits" in {
     iotesters.Driver.execute(args, () => new OutputRegisterWrapper) {
       c => new OutputRegisterTester(c)
+    } should be (true)
+  }
+  "TimerRegister" should "count" in {
+    iotesters.Driver.execute(args, () => new TimerRegister(11)) {
+      c => new TimerRegisterTester(c)
     } should be (true)
   }
 }

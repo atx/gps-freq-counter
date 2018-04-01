@@ -66,3 +66,20 @@ class OutputRegister(initVal: UInt) extends Module {
     reg := maskedWrite
   }
 }
+
+
+class TimerRegister(val divider: Int) extends Module {
+  require(divider >= 1)
+  val io = IO(new Bundle {
+    val bus = Flipped(new MemoryBus)
+  })
+
+  val reg = RegInit(0.U(32.W))
+
+  io.bus.rdata := reg
+  io.bus.ready := true.B
+
+  when (Counter(divider).inc()) {
+    reg := reg + 1.U
+  }
+}

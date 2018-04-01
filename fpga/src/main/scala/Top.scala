@@ -120,6 +120,9 @@ class Top(implicit val conf: TopConfig) extends RawModule {
       io.leds.b -> false
       )
     io.oled.dc := Mux(io.oled.spi.cs === false.B, oledRawDC, true.B)
+    // millisecond 32-bit timer should overflow after 7 weeks, probably not
+    // worth caring about too much
+    val msTimer = Module(new TimerRegister(conf.mainClockFreq / 1000))
 
     var mmDevices =
       List(
@@ -130,7 +133,7 @@ class Top(implicit val conf: TopConfig) extends RawModule {
       ) ++
       MemoryMux.singulars(
         0x31000000l,
-        statusReg.io.bus, outputReg.io.bus, uart.io.bus, pps.io.bus
+        statusReg.io.bus, outputReg.io.bus, msTimer.io.bus, uart.io.bus, pps.io.bus
       )
     if (conf.isSim) {
       val debugReg = Module(new OutputRegister(0.U(32.W)))
