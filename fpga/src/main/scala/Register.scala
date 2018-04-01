@@ -86,7 +86,7 @@ object AcknowledgeRegister {
   def build(inputs: Seq[Bool]) : AcknowledgeRegister = {
     val a = Module(new AcknowledgeRegister(inputs.length))
     for ((b, i) <- inputs.zipWithIndex) {
-      a.io.inputs(i) := false.B
+      a.io.inputs(i) := b
     }
     return a
   }
