@@ -2,7 +2,6 @@
 package gfc
 
 import chisel3._
-import chisel3.iotesters.{ChiselFlatSpec, PeekPokeTester}
 
 
 class SPITester(c: SPI) extends BusTester(c, c.io.bus) {
@@ -60,11 +59,6 @@ class SPITester(c: SPI) extends BusTester(c, c.io.bus) {
   }
 }
 
-class SPITests extends ChiselFlatSpec {
-  "SPI" should "work" in {
-    val args = Array("--fint-write-vcd")
-    iotesters.Driver.execute(args, () => new SPI) {
-      c => new SPITester(c)
-    } should be (true)
-  }
+class SPITests extends GFCSpec {
+  should("work", () => new SPI, new SPITester(_))
 }

@@ -4,7 +4,7 @@ package gfc
 import scala.collection.immutable.ListMap
 import chisel3._
 import chisel3.util._
-import chisel3.iotesters.{ChiselFlatSpec, PeekPokeTester, Driver}
+import chisel3.iotesters.{PeekPokeTester}
 
 class NeverReadyMemory extends Module {
   val io = IO(new Bundle {
@@ -127,11 +127,6 @@ class MemoryMuxReadTester(c: MemoryMuxTestWrapper) extends PeekPokeTester(c) {
   }
 }
 
-class MemoryMuxTests extends ChiselFlatSpec {
-  "MemoryMux" should "properly select slaves to read from" in {
-    val args = Array("--fint-write-vcd")
-    iotesters.Driver.execute(args, () => new MemoryMuxTestWrapper) {
-      c => new MemoryMuxReadTester(c)
-    } should be (true)
-  }
+class MemoryMuxTests extends GFCSpec {
+  should("properly select slaves to read from", () => new MemoryMuxTestWrapper, new MemoryMuxReadTester(_))
 }

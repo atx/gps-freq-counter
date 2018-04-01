@@ -2,7 +2,7 @@
 package gfc
 
 import chisel3._
-import chisel3.iotesters.{ChiselFlatSpec, PeekPokeTester}
+import chisel3.iotesters.{PeekPokeTester}
 
 
 abstract class PicoRVBaseTester(c: PicoRV) extends PeekPokeTester(c) {
@@ -138,32 +138,16 @@ class PicoRVMainTester(c: TopWrapper) extends PeekPokeTester(c) {
 }
 
 
-class PicoRVTests extends ChiselFlatSpec {
-  val args = Array("--backend-name", "verilator")
-  "PicoRV" should "correctly execute instructions" in {
-    iotesters.Driver.execute(args, () => new PicoRV) {
-      c => new PicoRVSimpleTester(c)
-    } should be (true)
-  }
-  "PicoRV" should "correctly interface with a memory mapped device" in {
-    iotesters.Driver.execute(args, () => new PicoRVIntegrationTestWrapper) {
-      c => new PicoRVIntegrationTester(c)
-    } should be (true)
-   }
+class PicoRVTests extends GFCSpec {
+  override lazy val args = Array("--backend-name", "verilator")
+  should("correctly execute instructions", () => new PicoRV, new PicoRVSimpleTester(_))
+  should("correctly interface with a memory mapped device",
+    () => new PicoRVIntegrationTestWrapper, new PicoRVIntegrationTester(_))
 
-  def runFirmware(firmwareFile: String, testerGen: TopWrapper => PeekPokeTester[TopWrapper]) = {
-    iotesters.Driver.execute(args, () => new TopWrapper(firmwareFile))(testerGen) should be (true)
+  def firmwareShould(description: String, firmwareFile: String, testerGen: TopWrapper => PeekPokeTester[TopWrapper]) = {
+    should(description, () => new TopWrapper(firmwareFile), testerGen)
   }
 
-  "PicoRV" should "produce correct result in test_fib" in {
-    runFirmware("picorv_test_fib.memh", new PicoRVFibTester(_))
-  }
-
-  "PicoRV" should "produce correct result in test_spi" in {
-    runFirmware("picorv_test_spi.memh", new PicoRVSPITester(_))
-  }
-
-  //"PicoRV" should "run the main program" taggedAs(Slow) in {
-  //  runFirmware("gfc.memh", new PicoRVMainTester(_))
-  //}
+  firmwareShould("produce correct result in test_fib", "picorv_test_fib.memh", new PicoRVFibTester(_))
+  firmwareShould("produce correct result in test_spi", "picorv_test_spi.memh", new PicoRVSPITester(_))
 }

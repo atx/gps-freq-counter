@@ -3,7 +3,6 @@
 package gfc
 
 import chisel3._
-import chisel3.iotesters.{ChiselFlatSpec}
 
 
 class DebouncerTester(c: Debouncer) extends BetterPeekPokeTester(c) {
@@ -23,11 +22,6 @@ class DebouncerTester(c: Debouncer) extends BetterPeekPokeTester(c) {
 }
 
 
-class DebouncerTests extends ChiselFlatSpec {
-  val args = Array("--fint-write-vcd")
-  "Debouncer" should "debounce" in {
-    iotesters.Driver.execute(args, () => new Debouncer(10, 5)) {
-      c => new DebouncerTester(c)
-    } should be (true)
-  }
+class DebouncerTests extends GFCSpec {
+  should("debounce", () => new Debouncer(10, 5), new DebouncerTester(_))
 }

@@ -2,7 +2,7 @@
 package gfc
 
 import chisel3._
-import chisel3.iotesters.{ChiselFlatSpec, PeekPokeTester, Driver}
+import chisel3.iotesters.{PeekPokeTester}
 
 class MemoryTester(c: Memory) extends PeekPokeTester(c) {
   poke(c.io.bus.valid, false.B)
@@ -84,22 +84,11 @@ class VerilogInitializedMemoryTester(c: VerilogInitializedMemory) extends BusTes
   }
 }
 
-class MemoryTests extends ChiselFlatSpec {
-  val args = Array("--fint-write-vcd")
-  "Memory" should "handle writes and reads correctly" in {
-    iotesters.Driver.execute(args, () => new Memory(1024)) {
-      c => new MemoryTester(c)
-    } should be (true)
-  }
-  "ReadOnlyMemory" should "properly initialize and handle reads" in {
-    iotesters.Driver.execute(args, () => new ReadOnlyMemory(ReadOnlyMemoryTester.initData)) {
-      c => new ReadOnlyMemoryTester(c)
-    } should be (true)
-  }
-  "VerilogInitializedMemory" should "get properly initialized" in {
-    iotesters.Driver.execute(Array("--backend-name", "verilator"),
-      () => new VerilogInitializedMemory("verilog_initialized_memory.hex")) {
-        c => new VerilogInitializedMemoryTester(c)
-      } should be (true)
-  }
+class MemoryTests extends GFCSpec {
+  should("handle writes and read correctly", () => new Memory(1024), new MemoryTester(_))
+  should("properly initialize and handle reads",
+    () => new ReadOnlyMemory(ReadOnlyMemoryTester.initData), new ReadOnlyMemoryTester(_))
+  should("properly initialize and handle reads",
+    () => new VerilogInitializedMemory("verilog_initialized_memory.hex"),
+    new VerilogInitializedMemoryTester(_), Array("--backend-name", "verilator"))
 }

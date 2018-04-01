@@ -2,7 +2,6 @@
 package gfc
 
 import chisel3._
-import chisel3.iotesters.{ChiselFlatSpec}
 
 
 abstract class RegisterTester[+T <: Module](private val c: T, val bus: MemoryBus) extends BetterPeekPokeTester(c) {
@@ -158,21 +157,8 @@ class AcknowledgeRegisterTester(c: AcknowledgeRegister) extends RegisterTester(c
 }
 
 
-class RegisterTests extends ChiselFlatSpec {
-  val args = Array("--fint-write-vcd")
-  "OutputRegister" should "output bits" in {
-    iotesters.Driver.execute(args, () => new OutputRegisterWrapper) {
-      c => new OutputRegisterTester(c)
-    } should be (true)
-  }
-  "TimerRegister" should "count" in {
-    iotesters.Driver.execute(args, () => new TimerRegister(11)) {
-      c => new TimerRegisterTester(c)
-    } should be (true)
-  }
-  "AcknowledgeRegister" should "work" in {
-    iotesters.Driver.execute(args, () => new AcknowledgeRegister(5)) {
-      c => new AcknowledgeRegisterTester(c)
-    } should be (true)
-  }
+class RegisterTests extends GFCSpec {
+  should("output bits", () => new OutputRegisterWrapper, new OutputRegisterTester(_))
+  should("count", () => new TimerRegister(11), new TimerRegisterTester(_))
+  should("work", () => new AcknowledgeRegister(5), new AcknowledgeRegisterTester(_))
 }

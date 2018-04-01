@@ -2,7 +2,6 @@
 package gfc
 
 import chisel3._
-import chisel3.iotesters.{ChiselFlatSpec}
 
 
 class PPSCounterTester(c: PPSCounter) extends BusTester(c, c.io.bus) {
@@ -47,11 +46,6 @@ class PPSCounterTester(c: PPSCounter) extends BusTester(c, c.io.bus) {
 }
 
 
-class PPSCounterTests extends ChiselFlatSpec {
-  val args = Array("--fint-write-vcd")
-  "PPSCounter" should "count frequency pulses" in {
-    iotesters.Driver.execute(args, () => new PPSCounter) {
-      c => new PPSCounterTester(c)
-    } should be (true)
-  }
+class PPSCounterTests extends GFCSpec {
+  should("count frequency pulses", () => new PPSCounter, new PPSCounterTester(_))
 }

@@ -2,7 +2,6 @@
 package gfc
 
 import chisel3._
-import chisel3.iotesters.{ChiselFlatSpec}
 
 
 class UARTTXTester(c: UART) extends BusTester(c, c.io.bus) {
@@ -121,16 +120,8 @@ class UARTRXTester(c: UART) extends BusTester(c, c.io.bus, readTimeout=0) {
 }
 
 
-class UARTTests extends ChiselFlatSpec {
-  val args = Array("--fint-write-vcd")
-  "UART" should "transmit bytes" in {
-    iotesters.Driver.execute(args, () => new UART(divider=32, perBit=15)) {
-      c => new UARTTXTester(c)
-    } should be (true)
-  }
-  "UART" should "receive bytes" in {
-    iotesters.Driver.execute(args, () => new UART(divider=32, perBit=15)) {
-      c => new UARTRXTester(c)
-    } should be (true)
-  }
+class UARTTests extends GFCSpec {
+  val dutGen = () => new UART(divider = 32, perBit = 15)
+  should("transmit bytes", dutGen, new UARTTXTester(_))
+  should("receive bytes", dutGen, new UARTRXTester(_))
 }
