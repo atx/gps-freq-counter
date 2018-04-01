@@ -10,6 +10,7 @@ set (CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY)
 set (CMAKE_C_COMPILER   "${CROSS_COMPILE}gcc")
 set (CMAKE_ASM_COMPILER	"${CROSS_COMPILE}as")
 set (CMAKE_OBJCOPY		"${CROSS_COMPILE}objcopy")
+set (CMAKE_SIZE			"${CROSS_COMPILE}size")
 
 set (CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -march=rv32e -mabi=ilp32e")
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -ggdb -march=rv32e -mabi=ilp32e -ffunction-sections")
@@ -36,3 +37,8 @@ foreach (target_name ${_targets})
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	)
 endforeach ()
+
+add_custom_command (
+	TARGET gfc POST_BUILD
+	COMMAND ${CMAKE_SIZE} $<TARGET_FILE:gfc>
+)
