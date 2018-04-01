@@ -31,7 +31,6 @@ class SPI(val divider: Int = 10, val memSize: Int = 256) extends Module {
   val baseCntr = Counter(divider)
 
   val mem = SyncReadMem(memSize, Vec(4, UInt(8.W)))
-  Memory.connectMemory(mem, io.bus)
 
   io.spi.clk := true.B
 
@@ -39,7 +38,13 @@ class SPI(val divider: Int = 10, val memSize: Int = 256) extends Module {
   val byteCount = Reg(UInt(log2Ceil(memSize * 8).W))
   val wordPtr = ptr / 32.U
   val readBuffer = Reg(UInt(32.W))
-  val readValueRaw = mem.read(wordPtr)
+
+  io.bus.ready := RegNext(io.bus.valid)
+  Memory.connectWrite(mem, io.bus)
+
+  val readValueRaw = mem.read(Mux(state === sIdle, io.bus.wordAddress, wordPtr))
+  io.bus.rdata := readValueRaw.toBits
+
   val readValue = Vec(readValueRaw(3), readValueRaw(2),
                       readValueRaw(1), readValueRaw(0)).toBits
 

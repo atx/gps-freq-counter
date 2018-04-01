@@ -15,6 +15,13 @@ class MemoryBus extends Bundle {
   val wdata = Output(UInt(32.W))
   val wstrb = Output(UInt(4.W))
   val rdata = Input(UInt(32.W))
+
+  def isWrite = valid && wstrb =/= 0.U
+  def isRead = valid && wstrb === 0.U
+  def wordAddress = addr >> 2
+
+  def wdataAsByteVec = Vec(Array(wdata(7, 0), wdata(15, 8), wdata(23, 16), wdata(31, 24)))
+  def wstrbAsArray = Array(wstrb(0), wstrb(1), wstrb(2), wstrb(3))
 }
 
 

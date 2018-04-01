@@ -6,25 +6,20 @@ import chisel3.util._
 
 object Memory
 {
+  def connectWrite(mem: SyncReadMem[Vec[UInt]], bus: MemoryBus) = {
+    when (bus.isWrite) {
+      mem.write(bus.wordAddress, bus.wdataAsByteVec, bus.wstrbAsArray)
+    }
+  }
+
   def connectMemory(mem: SyncReadMem[Vec[UInt]], bus: MemoryBus) = {
-    val write = bus.valid && bus.wstrb =/= 0.U
-    val read = bus.valid && bus.wstrb === 0.U
-    var wordAddress = bus.addr >> 2
     bus.ready := RegNext(bus.valid)
 
-    when (write) {
-      val inBitVec = Vec(Array(bus.wdata(7, 0),
-                               bus.wdata(15, 8),
-                               bus.wdata(23, 16),
-                               bus.wdata(31, 24)))
-      val inMask = Array(bus.wstrb(0),
-                         bus.wstrb(1),
-                         bus.wstrb(2),
-                         bus.wstrb(3))
-      mem.write(wordAddress, inBitVec, inMask)
+    when (bus.isWrite) {
+      mem.write(bus.wordAddress, bus.wdataAsByteVec, bus.wstrbAsArray)
       bus.rdata := DontCare
     } .otherwise {
-      bus.rdata := mem.read(wordAddress).toBits
+      bus.rdata := mem.read(bus.wordAddress).toBits
     }
   }
 }
