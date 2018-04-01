@@ -163,7 +163,7 @@ class PicoRVTests extends ChiselFlatSpec {
     runFirmware("picorv_test_spi.memh", new PicoRVSPITester(_))
   }
 
-  "PicoRV" should "run the main program" in {
-    runFirmware("gfc.memh", new PicoRVMainTester(_))
-  }
+  //"PicoRV" should "run the main program" taggedAs(Slow) in {
+  //  runFirmware("gfc.memh", new PicoRVMainTester(_))
+  //}
 }
