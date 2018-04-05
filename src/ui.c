@@ -95,6 +95,7 @@ struct ui_state {
 	struct {
 		bool has_fix;
 		unsigned int n_sats;
+		uint32_t last_update;
 	} gps;
 };
 
@@ -110,7 +111,8 @@ static struct ui_state ui_state = {
 	},
 	.gps = {
 		.has_fix = false,
-		.n_sats = 0
+		.n_sats = 0,
+		.last_update = 0
 	}
 };
 
@@ -216,7 +218,9 @@ static void render_status_gps()
 	const struct sprite *s = ui_state.gps.has_fix ? &sprite_status_gps_fix : &sprite_status_gps_nofix;
 	blit_sprite(s, x, y, OLED_BLIT_NORMAL);
 	unsigned int idx = ui_state.gps.n_sats;
-	if (idx > 10) {
+	if (time_ms() - ui_state.gps.last_update > 4000) {
+		idx = 11;  // The '?' character
+	} else if (idx > 10) {
 		idx = 10;  // This is the '+' chracter
 	}
 	blit_font(&font_tiny_digits, idx, x + 2, y + 5, OLED_BLIT_NORMAL);
@@ -287,6 +291,7 @@ void ui_on_pps(uint32_t count)
 void ui_on_frame()
 {
 	render_status_key(current_key_state());
+	render_status_gps();
 
 	char dst[20];
 	sprintf(dst, "time = %lu", time_ms());
@@ -296,7 +301,9 @@ void ui_on_frame()
 
 void ui_on_gps_update(bool has_fix, unsigned int n_sats)
 {
+	output_high(OUTPUT_LED_B);
 	ui_state.gps.has_fix = has_fix;
 	ui_state.gps.n_sats = n_sats;
-	render_status_gps();
+	ui_state.gps.last_update = time_ms();
+	output_low(OUTPUT_LED_B);
 }

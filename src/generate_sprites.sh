@@ -21,7 +21,7 @@ function do_img {
 	$GENSCRIPT -s $1 img -i $2 >> ${OUTFILE} 
 }
 
-do_font font_tiny_digits https://cgit.freedesktop.org/xorg/font/misc-misc/plain/4x6.bdf 0123456789+
+do_font font_tiny_digits https://cgit.freedesktop.org/xorg/font/misc-misc/plain/4x6.bdf 0123456789+?
 do_font_ascii font_small_ascii https://cgit.freedesktop.org/xorg/font/misc-misc/plain/5x7.bdf
 
 for file in ./sprites/*.png; do
