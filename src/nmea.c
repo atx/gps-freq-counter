@@ -6,16 +6,42 @@
 #include "ui.h"
 #include "utils.h"
 
+
+static bool verify_checksum(const char *buff)
+{
+	// NMEA checksum is XOR of bytes between $ and *
+	// The expected checksum is then in hexadecimal at the end
+	buff++;
+	uint8_t ck = 0;
+	while (*buff != '\0' && *buff != '*') {
+		ck ^= *buff++;
+	}
+
+	if (*buff == '*') {
+		// TODO: It might be a good idea to get a specialized integer parsing
+		// functions instead of the whole strtol beast
+		if (buff[1] == '\0' || buff[2] == '\0') {
+			return false;
+		}
+		uint8_t exp = strtol(buff + 1, NULL, 16);
+		return exp == ck;
+	}
+
+	return false;
+}
+
+
 void uart_rx_line_callback(char *buff, size_t length)
 {
 	// Note that the buffer is intentionally not const - it's going to get
 	// dropped by the uart code anyway, so we can at least use it for strtok
-	char *saveptr;
-	char *type = strtok_r(buff, ",", &saveptr);
-	if (strcmp(type, "$GPGGA")) {
+
+	if (!str_startswith(buff, "$GPGGA") || !verify_checksum(buff)) {
 		return;
 	}
 
+	char *saveptr;
+	strtok_r(buff, ",", &saveptr);
 	char *tokens[30];
 	unsigned int i = 0;
 	while (i < ARRAY_SIZE(tokens) && (tokens[i++] = strtok_r(NULL, ",", &saveptr)) != NULL) {}
