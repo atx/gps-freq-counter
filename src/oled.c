@@ -68,8 +68,8 @@
 
 static_assert(SPI_BUFFER_LENGTH >= CMDBUFF_LEN + FRAMEBUFF_LEN, "SPI buffer too small!");
 
-static volatile uint8_t *cmdbuff;
-static volatile uint8_t *framebuff;
+static uint8_t *cmdbuff;
+static uint8_t *framebuff;
 
 
 #define COMMANDS(cmds) { \
@@ -124,9 +124,19 @@ void oled_command(uint8_t cmd)
 }
 
 
+#pragma GCC push_options
+#pragma GCC optimize("O3")
+
+
+static inline uint8_t *framebuffer_ptr(unsigned int x, unsigned int y)
+{
+	return &framebuff[x + (y/8)*OLED_WIDTH];
+}
+
+
 inline void oled_draw_pixel(unsigned int x, unsigned int y, bool on)
 {
-	volatile uint8_t *p = &framebuff[x + (y/8)*OLED_WIDTH];
+	uint8_t *p = framebuffer_ptr(x, y);
 	uint8_t mask = 1 << (y % 8);
 	if (on) {
 		*p |=  mask;
@@ -140,8 +150,32 @@ void oled_blit(const uint8_t *d, unsigned int w, unsigned int h,
 			   unsigned int x, unsigned int y,
 			   enum oled_blit_mode mode)
 {
+	unsigned int dy = 0;
+	for (; dy + 8 < h; dy += 8) {
+		for (unsigned int dx = 0; dx < w; dx++) {
+			uint8_t pack = d[dx + (dy/8)*w];
+			if (mode == OLED_BLIT_INVERT) {
+				pack = ~pack;
+			}
+			unsigned int ytop = y + dy;
+			unsigned int ybot = y + dy + 7;
+			uint8_t *ptop = framebuffer_ptr(x+dx, ytop);
+			uint8_t *pbot = framebuffer_ptr(x+dx, ybot);
+
+			const unsigned int yrem = ytop % 8;
+
+			uint8_t vtop = pack << yrem;
+			uint8_t vbot = pack >> (8 - yrem);
+			uint8_t mtop = 0xff >> (8 - yrem);
+			uint8_t mbot = 0xff << yrem;
+
+			*ptop = (vtop & ~mtop) | (*ptop & mtop);
+			*pbot = (vbot & ~mbot) | (*pbot & mbot);
+		}
+	}
+
 	// TODO: Optimize this
-	for (unsigned int dy = 0; dy < h; dy++) {
+	for (; dy < h; dy++) {
 		for (unsigned int dx = 0; dx < w; dx++) {
 			bool pixel = !!(d[dx + (dy/8)*w] & BIT(dy % 8));
 			if (mode == OLED_BLIT_INVERT) {
@@ -151,6 +185,8 @@ void oled_blit(const uint8_t *d, unsigned int w, unsigned int h,
 		}
 	}
 }
+
+#pragma GCC pop_options
 
 
 void oled_fill(unsigned int x, unsigned int y, unsigned int w, unsigned int h, enum oled_blit_mode mode)
