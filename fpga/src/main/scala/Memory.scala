@@ -60,14 +60,18 @@ class ReadOnlyMemory(data: Seq[UInt]) extends Module {
 }
 
 
-class VerilogInitializedMemoryBase(resourceName: String) extends BlackBox with HasBlackBoxInline {
+class VerilogInitializedMemoryBase(resourceName: String, mifName: String = null) extends BlackBox with HasBlackBoxInline {
   val io = IO(new Bundle {
     val clock = Input(Clock())
     val bus = Flipped(new MemoryBus)
   })
+  def urlToPath(a: java.net.URL) = { java.nio.file.Paths.get(a.toURI()).toAbsolutePath().toString() }
   val resource = getClass.getResource("/" + resourceName)
   val nwords = VerilogInitializedMemory.loadVerilogHexFromStream(resource.openStream()).length
-  val path = java.nio.file.Paths.get(resource.toURI()).toAbsolutePath().toString()
+  val hexPath = urlToPath(resource)
+  val mifPath = if (mifName != null) urlToPath(getClass.getResource("/" + mifName)) else ""
+  // TODO: Less hacky way of doing this?
+  val enable = if (mifName != null) "//" else ""
   setInline("VerilogInitializedMemoryBase.v",
     s"""
     |module VerilogInitializedMemoryBase(
@@ -80,9 +84,9 @@ class VerilogInitializedMemoryBase(resourceName: String) extends BlackBox with H
     |  input bus_instr,
     |  output reg [31:0] bus_rdata
     |  );
-    |reg [31:0] mem [0:$nwords];
+    |reg [31:0] mem [0:$nwords-1] /* synthesis ram_init_file = "$mifPath" */;
     |initial begin
-    |    $$readmemh("$path", mem);
+    |    $enable $$readmemh("$hexPath", mem);
     |end
 
     |always @(posedge clock) begin
@@ -106,12 +110,12 @@ object VerilogInitializedMemory {
 }
 
 
-class VerilogInitializedMemory(val resourceName: String) extends Module {
+class VerilogInitializedMemory(val resourceName: String, val mifName: String = null) extends Module {
   val io = IO(new Bundle {
     val bus = Flipped(new MemoryBus)
   })
 
-  val base = Module(new VerilogInitializedMemoryBase(resourceName))
+  val base = Module(new VerilogInitializedMemoryBase(resourceName, mifName))
   io.bus <> base.io.bus
   base.io.clock := clock
 }

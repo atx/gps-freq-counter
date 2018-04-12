@@ -2,6 +2,9 @@
 
 set -e
 
+COMMAND="$1"
+PROJECT="gps-freq-counter"
+
 function log()
 {
 	echo -ne '\033[1;36m'
@@ -12,8 +15,8 @@ function log()
 cd $(dirname $0)
 
 OUTDIR=output_files
-SOFFILE=${OUTDIR}/gps-freq-counter.sof
-SVFFILE=${OUTDIR}/gps-freq-counter.svf
+SOFFILE=${OUTDIR}/${PROJECT}.sof
+SVFFILE=${OUTDIR}/${PROJECT}.svf
 
 log "Building the firmware"
 pushd ../../src/build
@@ -25,11 +28,17 @@ pushd ..
 sbt run
 popd
 
-log "Compiling"
-quartus_sh --flow compile gps-freq-counter
+if [ "$COMMAND" != "mifonly" ]; then
+	log "Compiling"
+	quartus_sh --flow compile ${PROJECT}
+else
+	log "Rebuilding MIFs"
+	quartus_cdb --update_mif ${PROJECT}
+	quartus_asm ${PROJECT}
+fi
 
 log "Creating SVF"
-quartus_cpf -c -q 12.0MHz -g 3.3V -n p $SOFFILE $SVFFILE
+quartus_cpf -c -q 12.0MHz -g 3.3V -n p ${SOFFILE} ${SVFFILE}
 
 log "Flashing"
 jtag ./flash.urjtag

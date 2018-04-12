@@ -48,7 +48,8 @@ case class TopConfig(
   firmwareFile: String,
   isSim: Boolean = true,
   mainClockFreq: Int = 10000000,
-  spiClockFreq: Int = 1000000
+  spiClockFreq: Int = 1000000,
+  mifFile: String = null
 )
 
 
@@ -98,7 +99,7 @@ class Top(implicit val conf: TopConfig) extends RawModule {
   withClockAndReset (mainClock, reset) {
     val rv = Module(new PicoRV)
 
-    val fwMem = Module(new VerilogInitializedMemory(conf.firmwareFile))
+    val fwMem = Module(new VerilogInitializedMemory(conf.firmwareFile, conf.mifFile))
     val rwMem = Module(new Memory(1024 * 12/4))
     val stackMem = Module(new Memory(1024))
     val spi = Module(new SPI(divider = (conf.mainClockFreq / conf.spiClockFreq), memSize = 260))
@@ -160,6 +161,7 @@ object Main extends App {
   implicit val conf = TopConfig(
     isSim = false,
     firmwareFile = "gfc.memh",
+    mifFile = "gfc.mif",
     mainClockFreq = 90000000,
     spiClockFreq =   7500000
     )

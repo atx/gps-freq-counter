@@ -46,6 +46,11 @@ foreach (target_name gfc test_fib test_spi)
 		COMMAND ${CMAKE_SOURCE_DIR}/bintoverilog.py $<TARGET_FILE:${target_name}>.bin $<TARGET_FILE:${target_name}>.memh
 		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
 	)
+	add_custom_target (${target_name}.mif ALL
+		DEPENDS ${target_name}.bin
+		COMMAND ${CMAKE_SOURCE_DIR}/bintoverilog.py -f mif $<TARGET_FILE:${target_name}>.bin $<TARGET_FILE:${target_name}>.mif
+		WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+	)
 endforeach ()
 
 add_custom_command (
