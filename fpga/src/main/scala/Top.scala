@@ -99,7 +99,7 @@ class Top(implicit val conf: TopConfig) extends RawModule {
   withClockAndReset (mainClock, reset) {
     val rv = Module(new PicoRV)
 
-    val fwMem = Module(new VerilogInitializedMemory(conf.firmwareFile, conf.mifFile))
+    val fwMem = Module(new VerilogInitializedMemory(conf.firmwareFile, conf.mifFile, 1024/4*12))
     val rwMem = Module(new Memory(1024 * 12/4))
     val stackMem = Module(new Memory(1024))
     val spi = Module(new SPI(divider = (conf.mainClockFreq / conf.spiClockFreq), memSize = 260))

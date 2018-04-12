@@ -60,14 +60,18 @@ class ReadOnlyMemory(data: Seq[UInt]) extends Module {
 }
 
 
-class VerilogInitializedMemoryBase(resourceName: String, mifName: String = null) extends BlackBox with HasBlackBoxInline {
+class VerilogInitializedMemoryBase(resourceName: String, mifName: String = null, wordCount: Int = 0)
+    extends BlackBox with HasBlackBoxInline {
   val io = IO(new Bundle {
     val clock = Input(Clock())
     val bus = Flipped(new MemoryBus)
   })
   def urlToPath(a: java.net.URL) = { java.nio.file.Paths.get(a.toURI()).toAbsolutePath().toString() }
   val resource = getClass.getResource("/" + resourceName)
-  val nwords = VerilogInitializedMemory.loadVerilogHexFromStream(resource.openStream()).length
+  val realLength = VerilogInitializedMemory.loadVerilogHexFromStream(resource.openStream()).length
+  val nwords = if (wordCount != 0) wordCount else realLength
+  require(nwords >= realLength)
+
   val hexPath = urlToPath(resource)
   val mifPath = if (mifName != null) urlToPath(getClass.getResource("/" + mifName)) else ""
   // TODO: Less hacky way of doing this?
@@ -110,12 +114,12 @@ object VerilogInitializedMemory {
 }
 
 
-class VerilogInitializedMemory(val resourceName: String, val mifName: String = null) extends Module {
+class VerilogInitializedMemory(val resourceName: String, val mifName: String = null, val wordCount: Int = 0) extends Module {
   val io = IO(new Bundle {
     val bus = Flipped(new MemoryBus)
   })
 
-  val base = Module(new VerilogInitializedMemoryBase(resourceName, mifName))
+  val base = Module(new VerilogInitializedMemoryBase(resourceName, mifName, wordCount))
   io.bus <> base.io.bus
   base.io.clock := clock
 }
