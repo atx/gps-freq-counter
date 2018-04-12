@@ -113,7 +113,7 @@ class Top(implicit val conf: TopConfig) extends RawModule {
 
     val statusReg = Module(new InputRegister)
     statusReg.io.value := Cat(
-      spi.io.status.idle
+      uart.io.status.txEmpty, spi.io.status.idle
       )
     val oledRawDC = Wire(Bool())
     val outputReg = OutputRegister.build(
@@ -130,7 +130,7 @@ class Top(implicit val conf: TopConfig) extends RawModule {
     val buttonProcessed = Debouncer(Utils.synchronize(io.button), conf.mainClockFreq / 2000, 10)
     val ackReg = AcknowledgeRegister.build(List(
       buttonProcessed, !buttonProcessed,
-      uart.io.status.rxFull, uart.io.status.txEmpty
+      uart.io.status.rxFull
       ))
 
     var mmDevices =

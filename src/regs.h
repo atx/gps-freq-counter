@@ -7,7 +7,8 @@
 #include "utils.h"
 
 #define STATUS_REG			(*((volatile uint32_t *)0x31000000l))
-#define STATUS_SPI_IDLE		BIT(0)
+#define STATUS_SPI_IDLE			BIT(0)
+#define STATUS_UART_TXEMPTY		BIT(1)
 
 static inline bool status_is_set(uint32_t mask)
 {
@@ -51,4 +52,23 @@ static inline uint32_t ack_status()
 static inline void ack_write(uint32_t val)
 {
 	ACK_REG = val;
+}
+
+#define UART_REG			(*((volatile uint32_t *)0x31000010l))
+
+static inline uint8_t uart_read()
+{
+	return SELECT_BYTE(UART_REG, 1);
+}
+
+static inline void uart_write(uint8_t c)
+{
+	UART_REG = c;
+}
+
+#define PPS_REG				(*((volatile uint32_t *)0x31000014l))
+
+static inline uint32_t pps_value()
+{
+	return PPS_REG;
 }

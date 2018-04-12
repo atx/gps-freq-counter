@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #include "regs.h"
-#include "uart.h"
+#include "ublox.h"
 #include "utils.h"
 #include "oled.h"
 #include "ui.h"
@@ -32,6 +32,10 @@ void main()
 			uart_process_tx();
 		}
 		ack_write(ackr);
+
+		if (status_is_set(STATUS_UART_TXEMPTY)) {
+			uart_process_tx();
+		}
 
 		if (time_ms() < next_tick) {
 			continue;

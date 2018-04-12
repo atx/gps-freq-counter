@@ -299,11 +299,13 @@ void ui_on_frame()
 }
 
 
-void ui_on_gps_update(bool has_fix, unsigned int n_sats)
+void ui_on_gps_status(bool has_fix)
 {
-	output_high(OUTPUT_LED_B);
 	ui_state.gps.has_fix = has_fix;
+}
+
+void ui_on_gps_svinfo(unsigned int n_sats)
+{
 	ui_state.gps.n_sats = n_sats;
 	ui_state.gps.last_update = time_ms();
-	output_low(OUTPUT_LED_B);
 }
