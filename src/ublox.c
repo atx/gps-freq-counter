@@ -80,7 +80,7 @@ static void dispatch_msg(const struct ublox_header *ubx)
 	case UBX_NAV_SVINFO: {
 		unsigned int n_sats = 0;
 		for (unsigned int i = 0; i < ubx->svinfo.numCh; i++) {
-			if (ubx->svinfo.channels[i].flags & BIT(0)) {
+			if (ubx->svinfo.channels[i].quality >= 2) {
 				n_sats++;
 			}
 		}
