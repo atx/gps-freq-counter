@@ -1,0 +1,4 @@
+cable UsbBlaster
+bsdl path ../bsdl
+detect
+svf output_files/gps-freq-counter.svf

@@ -1,0 +1,103 @@
+# -------------------------------------------------------------------------- #
+#
+# Copyright (C) 2017  Intel Corporation. All rights reserved.
+# Your use of Intel Corporation's design tools, logic functions 
+# and other software and tools, and its AMPP partner logic 
+# functions, and any output files from any of the foregoing 
+# (including device programming or simulation files), and any 
+# associated documentation or information are expressly subject 
+# to the terms and conditions of the Intel Program License 
+# Subscription Agreement, the Intel Quartus Prime License Agreement,
+# the Intel FPGA IP License Agreement, or other applicable license
+# agreement, including, without limitation, that your use is for
+# the sole purpose of programming logic devices manufactured by
+# Intel and sold by Intel or its authorized distributors.  Please
+# refer to the applicable agreement for further details.
+#
+# -------------------------------------------------------------------------- #
+#
+# Quartus Prime
+# Version 17.1.0 Build 590 10/25/2017 SJ Lite Edition
+# Date created = 22:23:19  March 09, 2018
+#
+# -------------------------------------------------------------------------- #
+#
+# Notes:
+#
+# 1) The default values for assignments are stored in the file:
+#		gps-freq-counter_assignment_defaults.qdf
+#    If this file doesn't exist, see file:
+#		assignment_defaults.qdf
+#
+# 2) Altera recommends that you do not modify this file. This
+#    file is updated automatically by the Quartus Prime software
+#    and any changes you make may be lost or overwritten.
+#
+# -------------------------------------------------------------------------- #
+
+
+set_global_assignment -name FAMILY "MAX 10"
+set_global_assignment -name DEVICE 10M08SAE144C8G
+set_global_assignment -name TOP_LEVEL_ENTITY Top
+set_global_assignment -name ORIGINAL_QUARTUS_VERSION 17.1.0
+set_global_assignment -name PROJECT_CREATION_TIME_DATE "22:23:19  MARCH 09, 2018"
+set_global_assignment -name LAST_QUARTUS_VERSION "17.1.0 Lite Edition"
+set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
+set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
+set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
+set_global_assignment -name DEVICE_FILTER_PACKAGE "ANY QFP"
+set_global_assignment -name DEVICE_FILTER_PIN_COUNT 144
+set_global_assignment -name DEVICE_FILTER_SPEED_GRADE 8
+set_global_assignment -name ERROR_CHECK_FREQUENCY_DIVISOR 256
+set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
+set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+set_global_assignment -name FLOW_ENABLE_POWER_ANALYZER ON
+set_global_assignment -name POWER_DEFAULT_INPUT_IO_TOGGLE_RATE "12.5 %"
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
+set_location_assignment PIN_85 -to io_uart_tx
+set_location_assignment PIN_86 -to io_uart_rx
+set_location_assignment PIN_90 -to io_oscillator
+set_location_assignment PIN_100 -to io_leds_a
+set_location_assignment PIN_99 -to io_leds_b
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to io_leds_a
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to io_leds_b
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to io_oscillator
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to io_pps
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to io_signal
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to io_uart_tx
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to io_uart_rx
+set_location_assignment PIN_26 -to io_pps
+set_location_assignment PIN_88 -to io_signal
+set_location_assignment PIN_59 -to io_oled_dc
+set_location_assignment PIN_58 -to io_oled_rst
+set_location_assignment PIN_56 -to io_oled_spi_clk
+set_location_assignment PIN_60 -to io_oled_spi_cs
+set_location_assignment PIN_57 -to io_oled_spi_mosi
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to io_oled_dc
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to io_oled_rst
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to io_oled_spi_clk
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to io_oled_spi_cs
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to io_oled_spi_mosi
+set_global_assignment -name TIMEQUEST_MULTICORNER_ANALYSIS ON
+set_global_assignment -name NUM_PARALLEL_PROCESSORS 12
+set_global_assignment -name ENABLE_OCT_DONE OFF
+set_global_assignment -name EXTERNAL_FLASH_FALLBACK_ADDRESS 00000000
+set_global_assignment -name STRATIXV_CONFIGURATION_SCHEME "PASSIVE SERIAL"
+set_global_assignment -name USE_CONFIGURATION_DEVICE OFF
+set_global_assignment -name INTERNAL_FLASH_UPDATE_MODE "SINGLE IMAGE WITH ERAM"
+set_global_assignment -name CRC_ERROR_OPEN_DRAIN OFF
+set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -rise
+set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -fall
+set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -rise
+set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -fall
+set_location_assignment PIN_110 -to io_button
+set_instance_assignment -name IO_STANDARD "3.3 V SCHMITT TRIGGER" -to io_button
+set_global_assignment -name QSYS_FILE altera_internal_oscillator.qsys
+set_global_assignment -name VERILOG_FILE ../build/ResetSignal.v
+set_global_assignment -name VERILOG_FILE ../build/VerilogInitializedMemoryBase.v
+set_global_assignment -name VERILOG_FILE ../build/picorv32.v
+set_global_assignment -name VERILOG_FILE ../build/Top.v
+set_global_assignment -name QIP_FILE altera_altpll.qip
+set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
