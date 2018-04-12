@@ -47,14 +47,24 @@ class UARTTXTester(c: UART) extends BusTester(c, c.io.bus) {
   }
 
   // Multiple bytes back to back
-  val exs = List(0xaa, 0x6d)
-  writeTx(exs(0))
+  val exs = List(0xaa, 0x6d, 0x41, 0xaa)
+  val iter = exs.iterator
+  writeTx(iter.next)
   stepWhile(readTxEmpty() == 0, c.divider * 2) {}
-  writeTx(exs(1))
+  writeTx(iter.next)
+
   for (ex <- exs) {
     val data = rxByte()
     expect(data == ex, s"received data ($data == $ex)")
+
+    stepWhile(readTxEmpty() == 0, c.divider * 2) {}
+    if (iter.hasNext) {
+      writeTx(iter.next)
+    }
   }
+
+  stepWhile(readTxEmpty() == 0, c.divider * 2) {}
+  writeTx(exs(2))
 
   step(1000)
 }
