@@ -97,6 +97,10 @@ struct ui_state {
 		unsigned int n_sats;
 		uint32_t last_update;
 	} gps;
+	struct {
+		bool flip;
+		uint64_t value;
+	} pps;
 };
 
 static struct ui_state ui_state = {
@@ -113,6 +117,9 @@ static struct ui_state ui_state = {
 		.has_fix = false,
 		.n_sats = 0,
 		.last_update = 0
+	},
+	.pps = {
+		.flip = false,
 	}
 };
 
@@ -227,6 +234,16 @@ static void render_status_gps()
 }
 
 
+static void render_status_pps()
+{
+	const unsigned int x = 28;
+	const unsigned int y = 0;
+	const struct sprite *s = ui_state.pps.flip ? &sprite_status_pps_1 : &sprite_status_pps_2;
+
+	blit_sprite(s, x, y, OLED_BLIT_NORMAL);
+}
+
+
 static void menu_next_entry()
 {
 	if (ui_state.menu.open) {
@@ -285,6 +302,18 @@ void ui_on_key_up()
 
 void ui_on_pps(uint32_t count)
 {
+	ui_state.pps.flip = !ui_state.pps.flip;
+	// TODO: Longer integration times
+	ui_state.pps.value = count;
+
+	unsigned int y = 20;
+	unsigned int x = 80;
+	for (unsigned int i = 0; i < 8; i++) {
+		int digit = count % 10;
+		count /= 10;
+		blit_font(&font_large_digits, digit, x, y, OLED_BLIT_NORMAL);
+		x -= font_large_digits.width - 1;
+	}
 }
 
 
@@ -292,10 +321,7 @@ void ui_on_frame()
 {
 	render_status_key(current_key_state());
 	render_status_gps();
-
-	char dst[20];
-	sprintf(dst, "time = %lu", time_ms());
-	blit_string(&font_small_ascii, dst, 10, 20, OLED_BLIT_NORMAL, 20);
+	render_status_pps();
 }
 
 

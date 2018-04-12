@@ -107,9 +107,14 @@ class Top(implicit val conf: TopConfig) extends RawModule {
     // TODO: Calculate the dividers from base clock
     val uart = Module(new UART(625, 15))
     io.uart <> uart.io.uart
+
     val pps = Module(new PPSCounter)
-    pps.io.pps := Utils.synchronize(io.pps)
-    pps.io.signal := Utils.synchronize(io.signal)
+    val ppsSync = Utils.synchronize(io.pps)
+    val signalSync = Utils.synchronize(io.signal)
+    pps.io.pps := ppsSync
+    //pps.io.signal := signalSync
+    pps.io.signal := Utils.synchronize(io.oscillator.toBits === 1.U)
+
 
     val statusReg = Module(new InputRegister)
     statusReg.io.value := Cat(
@@ -130,7 +135,8 @@ class Top(implicit val conf: TopConfig) extends RawModule {
     val buttonProcessed = Debouncer(Utils.synchronize(io.button), conf.mainClockFreq / 2000, 10)
     val ackReg = AcknowledgeRegister.build(List(
       buttonProcessed, !buttonProcessed,
-      uart.io.status.rxFull
+      uart.io.status.rxFull,
+      pps.io.status.updated
       ))
 
     var mmDevices =
