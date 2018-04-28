@@ -183,30 +183,31 @@ enum key_state current_key_state()
 
 
 struct menu_entry_descriptor {
-	const char *choices[4];
+	unsigned int count;
+	const char *choices[3];
 };
 
 
 const struct menu_entry_descriptor menu_entries[] = {
 	[MENU_INTIME] = {
+		.count = 3,
 		.choices = {
 			"^1",
 			"^2",
 			"^3",
-			NULL
 		}
 	},
 	[MENU_SOURCE] = {
+		.count = 2,
 		.choices = {
 			"In",
 			"Ex",
-			NULL
 		}
 	},
 	[MENU_HELP] = {
+		.count = 1,
 		.choices = {
-			"-?",
-			NULL
+			"-?"
 		}
 	}
 };
@@ -240,8 +241,8 @@ static void render_menu_bar()
 	if (ui_state.menu.open) {
 		const struct menu_entry_descriptor *desc = &menu_entries[ui_state.menu.selected];
 		rx = OLED_WIDTH - sprite_menu_button.width;
-		for (unsigned int i = 0; desc->choices[i] != NULL; i++) {
-			bool selected = ui_state.menu.prechoice == i;
+		for (int i = desc->count - 1; i >= 0; i--) {
+			bool selected = ui_state.menu.prechoice == (unsigned int)i;
 			render_menu_button(desc->choices[i], rx, y, selected);
 			rx -= button_width;
 		}
@@ -360,7 +361,8 @@ static void menu_next_entry()
 {
 	if (ui_state.menu.open) {
 		ui_state.menu.prechoice++;
-		if (menu_entries[ui_state.menu.selected].choices[ui_state.menu.prechoice] == NULL) {
+		const struct menu_entry_descriptor *desc = &menu_entries[ui_state.menu.selected];
+		if (ui_state.menu.prechoice == desc->count) {
 			ui_state.menu.prechoice = 0;
 		}
 	} else {
