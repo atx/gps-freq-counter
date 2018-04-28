@@ -19,6 +19,11 @@ void main()
 	uint32_t next_tick = time_ms();
 	while (true) {
 		uint32_t ackr = ack_status();
+
+		if (ackr) {
+			output_high(OUTPUT_LED_A);
+		}
+
 		if (ackr & ACK_BUTTON_DOWN) {
 			ui_on_key_down();
 		}
@@ -38,10 +43,11 @@ void main()
 		}
 
 		if (time_ms() < next_tick) {
+			output_low(OUTPUT_LED_A);
 			continue;
 		}
-
 		output_high(OUTPUT_LED_A);
+
 		next_tick = time_ms() + TICK_EVERY;
 
 		ui_on_frame();
