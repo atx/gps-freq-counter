@@ -20,6 +20,7 @@ static inline bool status_is_set(uint32_t mask)
 #define OUTPUT_OLED_RST		BIT(1)
 #define OUTPUT_LED_A		BIT(2)
 #define OUTPUT_LED_B		BIT(3)
+#define OUTPUT_SELECT_EX	BIT(4)
 
 static inline void output_high(uint32_t mask)
 {

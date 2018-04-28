@@ -110,10 +110,10 @@ class Top(implicit val conf: TopConfig) extends RawModule {
 
     val pps = Module(new PPSCounter)
     val ppsSync = Utils.synchronize(io.pps)
-    val signalSync = Utils.synchronize(io.signal)
+    val signalSelectExt = Wire(Bool())
     pps.io.pps := ppsSync
-    //pps.io.signal := signalSync
-    pps.io.signal := Utils.synchronize(io.oscillator.toBits === 1.U)
+    pps.io.signal := Mux(signalSelectExt,
+      Utils.synchronize(io.signal), Utils.synchronize(io.oscillator.toBits === 1.U))
 
 
     val statusReg = Module(new InputRegister)
@@ -125,7 +125,8 @@ class Top(implicit val conf: TopConfig) extends RawModule {
       oledRawDC -> true,
       io.oled.rst -> true,
       io.leds.a -> false,
-      io.leds.b -> false
+      io.leds.b -> false,
+      signalSelectExt -> false
       )
     io.oled.dc := Mux(io.oled.spi.cs === false.B, oledRawDC, true.B)
     // millisecond 32-bit timer should overflow after 7 weeks, probably not

@@ -379,8 +379,20 @@ static void menu_confirm()
 		ui_state.menu.open = false;
 		unsigned int choice = ui_state.menu.prechoice;
 		ui_state.menu.choices[ui_state.menu.selected] = choice;
-		if (ui_state.menu.selected == MENU_INTIME) {
+		switch (ui_state.menu.selected) {
+		case MENU_INTIME:
 			reset_integration();
+			break;
+		case MENU_SOURCE:
+			if (choice == 0) {
+				output_low(OUTPUT_SELECT_EX);
+			} else {
+				output_high(OUTPUT_SELECT_EX);
+			}
+			reset_integration();
+			break;  // TODO
+		case MENU_HELP:
+			break;  // TODO
 		}
 	} else {
 		ui_state.menu.open = true;
