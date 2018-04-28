@@ -100,6 +100,7 @@ struct ui_state {
 	struct {
 		bool flip;
 		uint64_t value;
+		uint32_t last_update;
 	} pps;
 };
 
@@ -305,14 +306,28 @@ void ui_on_pps(uint32_t count)
 	ui_state.pps.flip = !ui_state.pps.flip;
 	// TODO: Longer integration times
 	ui_state.pps.value = count;
+	ui_state.pps.last_update = time_ms();
+}
+
+
+static void render_value()
+{
+	uint32_t count = ui_state.pps.value;
+	bool valid = (time_ms() - ui_state.pps.last_update) < 1100;
 
 	unsigned int y = 20;
-	unsigned int x = 80;
+	unsigned int x = 90;
 	for (unsigned int i = 0; i < 8; i++) {
-		int digit = count % 10;
-		count /= 10;
+		int digit = 10;  // The '-' character
+		if (valid) {
+			digit = count % 10;
+			count /= 10;
+		}
 		blit_font(&font_large_digits, digit, x, y, OLED_BLIT_NORMAL);
-		x -= font_large_digits.width - 1;
+		x -= font_large_digits.width;
+		if (i % 3 == 2) {
+			x -= 4;
+		}
 	}
 }
 
@@ -322,6 +337,8 @@ void ui_on_frame()
 	render_status_key(current_key_state());
 	render_status_gps();
 	render_status_pps();
+
+	render_value();
 }
 
 
