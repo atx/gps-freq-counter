@@ -10,8 +10,8 @@ HOLE_XDELTA = PCB_WIDTH/2.0 - HOLE_OFFSET;
 HOLE_YDELTA = PCB_HEIGHT/2.0 - HOLE_OFFSET;
 SCREW_RADIUS = 1.0;
 SMA_RADIUS = 3.0;
-OLED_WIDTH = 27.0;
-OLED_HEIGHT = 14.5;
+OLED_WIDTH = 26.0;
+OLED_HEIGHT = 14.0;
 BUTTON_X = -11.2;
 BUTTON_Y = 16.6;
 
@@ -78,7 +78,7 @@ module pcb() {
   translate([0, -6, PCB_THICKNESS/2 + 7]) {
     color([0.0, 0.0, 0.0])
       cube([28, 27, 3], center = true);
-    translate([0, -6 + 4.5, 3/2])
+    translate([0, -5 + 4.5, 3/2])
       color([0.7, 0.7, 0.7])
       cube([OLED_WIDTH, OLED_HEIGHT, 1], center = true);
   }
@@ -103,9 +103,9 @@ module connector_holes(height) {
       rotate([0, 90, 0])
       cylinder(r = SMA_RADIUS*1.3, h = 10, center = true);
   }
-  translate([27, -8.5, height / 2 + 0.5])
+  translate([27, -8.5, height / 2 + 0.3])
     minkowski() {
-      cube([5.5, 7.8, 3.2], center = true);
+      cube([5.5, 7.8, 2.8], center = true);
       rotate([0, 90, 0])
         cylinder(r = 1.5, h = 1);
     }
@@ -172,13 +172,21 @@ module box_top() {
   BOTTOM = 1.5;
   translate([0, 0, HEIGHT/2])
   difference() {
-    box_base(HEIGHT, BOTTOM);
+    union() {
+      box_base(HEIGHT, BOTTOM);
 
-    translate([0, 0, HEIGHT/2 + 0.001])
-      screw_holes();
+      stub_height = 2;
+      translate([0, HOLE_YDELTA*1.05 + (BOX_EXTRA_SIZE-BOX_ROUNDING), -BOTTOM-stub_height/2])
+        cube([10, 2, HEIGHT+BOTTOM+stub_height], center = true);
+      translate([0, -(HOLE_YDELTA*1.05 + (BOX_EXTRA_SIZE-BOX_ROUNDING)), -BOTTOM-stub_height/2])
+        cube([10, 2, HEIGHT+BOTTOM+stub_height], center = true);
+    }
+
+    //translate([0, 0, HEIGHT/2 + 0.001])
+    //  screw_holes();
     connector_holes(-HEIGHT);
 
-    translate([0, -12 + 4.5, HEIGHT/2 - BOTTOM/2])
+    translate([0, -11 + 4.5, HEIGHT/2 - BOTTOM/2])
       minkowski() {
         cube([OLED_WIDTH - 2.2, OLED_HEIGHT - 2.2, BOTTOM*2], center = true);
         cylinder(r = 1.75, h = 1);
@@ -186,11 +194,11 @@ module box_top() {
 
     translate([BUTTON_X, BUTTON_Y, HEIGHT / 2]) {
       difference() {
-        cylinder(r = 7.4, h = HEIGHT, center = true);
-        cylinder(r = 5.5, h = HEIGHT, center = true);
+        cylinder(r = 6.5, h = HEIGHT, center = true);
+        cylinder(r = 5.0, h = HEIGHT, center = true);
         translate([-4, -4, 0])
           rotate([0, 0, 45])
-          cube([7, 7, BOTTOM*2], center = true);
+          cube([6, 6, BOTTOM*2], center = true);
       }
     }
   }
