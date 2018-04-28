@@ -28,8 +28,8 @@ void main()
 		if (ackr & ACK_UART_RXFULL) {
 			uart_process_rx();
 		}
-		if (ackr & ACK_UART_TXEMPTY) {
-			uart_process_tx();
+		if (ackr & ACK_PPS) {
+			ui_on_pps(pps_value());
 		}
 		ack_write(ackr);
 
