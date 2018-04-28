@@ -460,7 +460,9 @@ static void render_value()
 	unsigned int x = 90;
 	oled_fill(0, y, OLED_WIDTH, font_large_digits.height, OLED_BLIT_NORMAL);
 	if (extra_digits > 0) {
-		x += extra_digits * font_large_digits.width + group_sep_width;
+		// Empirically determined magical values to make the text kind of
+		// sort of centered.
+		x += extra_digits * (font_large_digits.width / 2 + group_sep_width);
 	}
 	for (unsigned int i = 0; i < 8 + extra_digits; i++) {
 		int digit = 10;  // The '-' character
@@ -469,13 +471,18 @@ static void render_value()
 			count /= 10;
 		}
 		blit_font(&font_large_digits, digit, x, y, OLED_BLIT_NORMAL);
-		x -= font_large_digits.width;
-		if ((i - extra_digits) % 3 == 2 || (extra_digits > 0 && i == (extra_digits - 1))) {
+		if (i >= extra_digits && (i - extra_digits) % 3 == 2) {
 			x -= group_sep_width;
+		} else if (extra_digits > 0 && i == (extra_digits - 1)) {
+			// Render decimal dot
+			x -= group_sep_width;
+			if (valid) {
+				oled_fill(x + 1, y + font_large_digits.height - 6, 2, 2, OLED_BLIT_INVERT);
+			}
 		}
+		x -= font_large_digits.width;
 	}
 }
-
 
 
 void ui_on_frame()
