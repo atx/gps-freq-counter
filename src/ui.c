@@ -408,6 +408,7 @@ static void render_value()
 
 	unsigned int y = 20;
 	unsigned int x = 90;
+	oled_fill(0, y, OLED_WIDTH, font_large_digits.height, OLED_BLIT_NORMAL);
 	if (extra_digits > 0) {
 		x += extra_digits * font_large_digits.width + group_sep_width;
 	}
