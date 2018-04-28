@@ -186,18 +186,46 @@ void oled_blit(const uint8_t *d, unsigned int w, unsigned int h,
 	}
 }
 
-#pragma GCC pop_options
-
 
 void oled_fill(unsigned int x, unsigned int y, unsigned int w, unsigned int h, enum oled_blit_mode mode)
 {
+	unsigned int dy = 0;
+	for (; dy + 8 < h; dy += 8) {
+		for (unsigned int dx = 0; dx < w; dx++) {
+			uint8_t pack = 0x00;
+			if (mode == OLED_BLIT_INVERT) {
+				pack = ~pack;
+			}
+			unsigned int ytop = y + dy;
+			unsigned int ybot = y + dy + 7;
+			uint8_t *ptop = framebuffer_ptr(x+dx, ytop);
+			uint8_t *pbot = framebuffer_ptr(x+dx, ybot);
+
+			const unsigned int yrem = ytop % 8;
+
+			uint8_t vtop = pack << yrem;
+			uint8_t vbot = pack >> (8 - yrem);
+			uint8_t mtop = 0xff >> (8 - yrem);
+			uint8_t mbot = 0xff << yrem;
+
+			*ptop = (vtop & ~mtop) | (*ptop & mtop);
+			*pbot = (vbot & ~mbot) | (*pbot & mbot);
+		}
+	}
+
 	// TODO: Optimize this
-	for (unsigned int dx = 0; dx < w; dx++) {
-		for (unsigned int dy = 0; dy < h; dy++) {
-			oled_draw_pixel(x + dx, y + dy, mode == OLED_BLIT_INVERT);
+	for (; dy < h; dy++) {
+		for (unsigned int dx = 0; dx < w; dx++) {
+			bool pixel = false;
+			if (mode == OLED_BLIT_INVERT) {
+				pixel = !pixel;
+			}
+			oled_draw_pixel(x + dx, y + dy, pixel);
 		}
 	}
 }
+
+#pragma GCC pop_options
 
 
 void oled_clear()
