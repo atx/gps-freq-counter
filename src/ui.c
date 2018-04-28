@@ -83,6 +83,18 @@ enum menu_entry {
 };
 #define MENU_ENTRY_COUNT 3
 
+enum menu_choice_digits {
+	DIGITS_1 = 0,
+	DIGITS_10 = 1,
+	DIGITS_100 = 2
+};
+
+const unsigned int menu_choice_digits_to_intime[] = {
+	[DIGITS_1] = 1,
+	[DIGITS_10] = 10,
+	[DIGITS_100] = 100
+};
+
 
 struct ui_state {
 	uint32_t key_down_time;
@@ -99,10 +111,18 @@ struct ui_state {
 	} gps;
 	struct {
 		bool flip;
-		uint64_t value;
+		uint32_t last_value;
 		uint32_t last_update;
+
+		struct {
+			uint16_t counter;
+			uint64_t value;
+			uint64_t output;
+		} i;
 	} pps;
 };
+
+
 
 static struct ui_state ui_state = {
 	.key_down_time = 0,
@@ -121,6 +141,13 @@ static struct ui_state ui_state = {
 	},
 	.pps = {
 		.flip = false,
+		.last_value = 0,
+		.last_update = 0,
+		.i = {
+			.counter = 0,
+			.value = 0,
+			.output = 0
+		},
 	}
 };
 
@@ -244,6 +271,43 @@ static void render_status_pps()
 	blit_sprite(s, x, y, OLED_BLIT_NORMAL);
 }
 
+static void render_status_integration()
+{
+	const unsigned int x = 42 + 1;
+	const unsigned int width = 8;
+	const unsigned int y = 0;
+
+	unsigned int incount = menu_choice_digits_to_intime[ui_state.menu.choices[MENU_INTIME]];
+	unsigned int at = ui_state.pps.i.counter;
+
+	unsigned int lines = 10;
+	if (incount == 10) {
+		lines = at;
+	} if (incount == 100) {
+		lines = at / 10;
+	}
+
+	oled_fill(x, y, width, lines, OLED_BLIT_INVERT);
+	oled_fill(x, y + lines, width, 10 - lines, OLED_BLIT_NORMAL);
+
+	// Make the progress bar a bit less dull
+	for (unsigned int dy = 0; dy < 10; dy++) {
+		if (dy % 4 < 2) {
+			continue;
+		}
+		oled_draw_pixel(x, y + dy, false);
+		oled_draw_pixel(x + width - 1, y + dy, false);
+	}
+}
+
+
+static void menu_select_digit_count()
+{
+	ui_state.pps.i.counter = 0;
+	ui_state.pps.i.value = 0;
+	ui_state.pps.i.output = 0;
+}
+
 
 static void menu_next_entry()
 {
@@ -264,7 +328,9 @@ static void menu_confirm()
 	if (ui_state.menu.open) {
 		// TODO
 		ui_state.menu.open = false;
-		ui_state.menu.choices[ui_state.menu.selected] = ui_state.menu.prechoice;
+		unsigned int choice = ui_state.menu.prechoice;
+		ui_state.menu.choices[ui_state.menu.selected] = choice;
+		menu_select_digit_count();
 	} else {
 		ui_state.menu.open = true;
 		ui_state.menu.prechoice = ui_state.menu.choices[ui_state.menu.selected];
@@ -304,20 +370,48 @@ void ui_on_key_up()
 void ui_on_pps(uint32_t count)
 {
 	ui_state.pps.flip = !ui_state.pps.flip;
-	// TODO: Longer integration times
-	ui_state.pps.value = count;
+
+	uint32_t now = time_ms();
+	if (now - ui_state.pps.last_update > 1100) {
+		ui_state.pps.i.value = 0;
+		ui_state.pps.i.counter = 0;
+		ui_state.pps.i.output = 0;
+	}
+
+	ui_state.pps.last_value = count;
 	ui_state.pps.last_update = time_ms();
+
+	unsigned int incount = menu_choice_digits_to_intime[ui_state.menu.choices[MENU_INTIME]];
+
+	if (incount == 0) {
+		ui_state.pps.i.output = count;
+	} else {
+		ui_state.pps.i.counter++;
+		ui_state.pps.i.value += count;
+		if (ui_state.pps.i.counter == incount) {
+			ui_state.pps.i.output = ui_state.pps.i.value;
+			ui_state.pps.i.counter = 0;
+			ui_state.pps.i.value = 0;
+		}
+	}
 }
 
 
 static void render_value()
 {
-	uint32_t count = ui_state.pps.value;
-	bool valid = (time_ms() - ui_state.pps.last_update) < 1100;
+	const unsigned int group_sep_width = 4;
+
+	uint32_t count = ui_state.pps.i.output;
+	bool valid = count != 0;
+
+	unsigned int extra_digits = ui_state.menu.choices[MENU_INTIME];
 
 	unsigned int y = 20;
 	unsigned int x = 90;
-	for (unsigned int i = 0; i < 8; i++) {
+	if (extra_digits > 0) {
+		x += extra_digits * font_large_digits.width + group_sep_width;
+	}
+	for (unsigned int i = 0; i < 8 + extra_digits; i++) {
 		int digit = 10;  // The '-' character
 		if (valid) {
 			digit = count % 10;
@@ -325,8 +419,8 @@ static void render_value()
 		}
 		blit_font(&font_large_digits, digit, x, y, OLED_BLIT_NORMAL);
 		x -= font_large_digits.width;
-		if (i % 3 == 2) {
-			x -= 4;
+		if ((i - extra_digits) % 3 == 2 || (extra_digits > 0 && i == (extra_digits - 1))) {
+			x -= group_sep_width;
 		}
 	}
 }
@@ -337,6 +431,7 @@ void ui_on_frame()
 	render_status_key(current_key_state());
 	render_status_gps();
 	render_status_pps();
+	render_status_integration();
 
 	render_value();
 }
