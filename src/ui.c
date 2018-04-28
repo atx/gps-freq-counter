@@ -120,6 +120,12 @@ struct ui_state {
 			uint64_t output;
 		} i;
 	} pps;
+	struct {
+		bool menu : 1;
+		bool pps : 1;
+		bool gps : 1;
+		bool value : 1;
+	} dirty;
 };
 
 
@@ -148,8 +154,16 @@ static struct ui_state ui_state = {
 			.value = 0,
 			.output = 0
 		},
+	},
+	.dirty = {
+		.menu = true,
+		.pps = true,
+		.gps = true,
+		.value = true
 	}
 };
+
+#define DIRTY(_name) { ui_state.dirty._name = true; }
 
 
 enum key_state current_key_state()
@@ -301,11 +315,44 @@ static void render_status_integration()
 }
 
 
-static void menu_select_digit_count()
+static void render_status_signal()
+{
+	static unsigned int counter = 0;
+	const unsigned int x = 28;
+	const unsigned int y = 0;
+	const unsigned int w = 10;
+	const unsigned int h = 10;
+	const unsigned int period = 6;
+
+	bool prev = (counter/4) % period < period / 2;
+	for (unsigned int dx = 0; dx < w; dx++) {
+		bool high = ((counter/4) + dx + 1) % period < period / 2;
+
+		for (unsigned int dy = 0; dy < h; dy++) {
+			bool val;
+			if (high != prev) {
+				val = true;
+			} else if (high) {
+				val = dy == h - 1;
+			} else {
+				val = dy == 0;
+			}
+			oled_draw_pixel(x + dx, y + dy, val);
+		}
+
+		prev = high;
+	}
+
+	counter = (counter + 1);
+}
+
+
+static void reset_integration()
 {
 	ui_state.pps.i.counter = 0;
 	ui_state.pps.i.value = 0;
 	ui_state.pps.i.output = 0;
+	DIRTY(value);
 }
 
 
@@ -319,7 +366,7 @@ static void menu_next_entry()
 	} else {
 		ui_state.menu.selected = (ui_state.menu.selected + 1) % MENU_ENTRY_COUNT;
 	}
-	render_menu_bar();
+	DIRTY(menu);
 }
 
 
@@ -330,27 +377,26 @@ static void menu_confirm()
 		ui_state.menu.open = false;
 		unsigned int choice = ui_state.menu.prechoice;
 		ui_state.menu.choices[ui_state.menu.selected] = choice;
-		menu_select_digit_count();
+		if (ui_state.menu.selected == MENU_INTIME) {
+			reset_integration();
+		}
 	} else {
 		ui_state.menu.open = true;
 		ui_state.menu.prechoice = ui_state.menu.choices[ui_state.menu.selected];
 	}
-	render_menu_bar();
+	DIRTY(menu);
 }
 
 
 void ui_init()
 {
-	render_menu_bar();
-	render_status_key(KEY_STATE_NONE);
-	render_status_gps();
+	// Nothing at this point
 }
 
 
 void ui_on_key_down()
 {
 	ui_state.key_down_time = time_ms();
-	render_status_key(KEY_STATE_SHORT);
 }
 
 
@@ -373,9 +419,7 @@ void ui_on_pps(uint32_t count)
 
 	uint32_t now = time_ms();
 	if (now - ui_state.pps.last_update > 1100) {
-		ui_state.pps.i.value = 0;
-		ui_state.pps.i.counter = 0;
-		ui_state.pps.i.output = 0;
+		reset_integration();
 	}
 
 	ui_state.pps.last_value = count;
@@ -385,6 +429,7 @@ void ui_on_pps(uint32_t count)
 
 	if (incount == 0) {
 		ui_state.pps.i.output = count;
+		DIRTY(value);
 	} else {
 		ui_state.pps.i.counter++;
 		ui_state.pps.i.value += count;
@@ -393,7 +438,10 @@ void ui_on_pps(uint32_t count)
 			ui_state.pps.i.counter = 0;
 			ui_state.pps.i.value = 0;
 		}
+		DIRTY(value);
 	}
+
+	DIRTY(pps);
 }
 
 
@@ -427,24 +475,40 @@ static void render_value()
 }
 
 
+
 void ui_on_frame()
 {
-	render_status_key(current_key_state());
-	render_status_gps();
-	render_status_pps();
-	render_status_integration();
+#define DIRTY_RUN(_name) \
+	if (ui_state.dirty._name && !(ui_state.dirty._name = false))
 
-	render_value();
+	render_status_key(current_key_state());
+	DIRTY_RUN(gps) {
+		render_status_gps();
+	}
+	DIRTY_RUN(pps) {
+		render_status_pps();
+		render_status_integration();
+	}
+	DIRTY_RUN(value) {
+		render_value();
+	}
+	DIRTY_RUN(menu) {
+		render_menu_bar();
+	}
+
+#undef DIRTY_RUN
 }
 
 
 void ui_on_gps_status(bool has_fix)
 {
 	ui_state.gps.has_fix = has_fix;
+	DIRTY(gps);
 }
 
 void ui_on_gps_svinfo(unsigned int n_sats)
 {
 	ui_state.gps.n_sats = n_sats;
 	ui_state.gps.last_update = time_ms();
+	DIRTY(gps);
 }
