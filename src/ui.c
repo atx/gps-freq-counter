@@ -302,16 +302,16 @@ static void render_status_integration()
 		lines = at / 10;
 	}
 
-	oled_fill(x, y, width, lines, OLED_BLIT_INVERT);
-	oled_fill(x, y + lines, width, 10 - lines, OLED_BLIT_NORMAL);
+	oled_fill(x, y, width, 10, OLED_BLIT_INVERT);
+	oled_fill(x + 1, y + MAX(lines, 1u), width - 2, 9 - CLAMP(lines, 1u, 9u), OLED_BLIT_NORMAL);
 
 	// Make the progress bar a bit less dull
-	for (unsigned int dy = 0; dy < 10; dy++) {
-		if (dy % 4 < 2) {
-			continue;
+	for (unsigned int dy = 0; dy < 8; dy++) {
+		for (unsigned int dx = 0; dx < width - 2; dx++) {
+			if ((dx/2 - dy) % 4 == 0) {
+				oled_draw_pixel(x + dx + 1, y + dy + 1, false);
+			}
 		}
-		oled_draw_pixel(x, y + dy, false);
-		oled_draw_pixel(x + width - 1, y + dy, false);
 	}
 }
 
