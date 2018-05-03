@@ -97,7 +97,7 @@ const unsigned int menu_choice_digits_to_intime[] = {
 
 
 struct ui_state {
-	uint32_t key_down_time;
+	timems_t key_down_time;
 	struct {
 		enum menu_entry selected;
 		bool open;
@@ -107,12 +107,12 @@ struct ui_state {
 	struct {
 		bool has_fix;
 		unsigned int n_sats;
-		uint32_t last_update;
+		timems_t last_update;
 	} gps;
 	struct {
 		bool flip;
 		uint32_t last_value;
-		uint32_t last_update;
+		timems_t last_update;
 
 		struct {
 			uint16_t counter;
@@ -171,7 +171,7 @@ enum key_state current_key_state()
 	if (ui_state.key_down_time == 0) {
 		return KEY_STATE_NONE;
 	}
-	uint32_t length = time_ms() - ui_state.key_down_time;
+	timems_t length = time_ms() - ui_state.key_down_time;
 	if (length < 1000) {
 		return KEY_STATE_SHORT;
 	}

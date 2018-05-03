@@ -34,7 +34,9 @@ static inline void output_low(uint32_t mask)
 
 #define MSTIMER_REG			(*((volatile uint32_t *)0x31000008l))
 
-static inline uint32_t time_ms()
+typedef uint32_t timems_t;
+
+static inline timems_t time_ms()
 {
 	return MSTIMER_REG;
 }

@@ -10,13 +10,13 @@
 #include "ui.h"
 
 
-#define TICK_EVERY		100
+#define TICK_EVERY_MS		100
 
 void main()
 {
 	oled_init();
 	ui_init();
-	uint32_t next_tick = time_ms();
+	timems_t next_tick = time_ms();
 	while (true) {
 		uint32_t ackr = ack_status();
 
@@ -48,7 +48,7 @@ void main()
 		}
 		output_high(OUTPUT_LED_A);
 
-		next_tick = time_ms() + TICK_EVERY;
+		next_tick = time_ms() + TICK_EVERY_MS;
 
 		ui_on_frame();
 		oled_flush();
