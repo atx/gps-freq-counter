@@ -122,6 +122,7 @@ void uart_process_rx()
 			cksum.ck_a = 0;
 			cksum.ck_b = 0;
 			receiving = true;
+			output_high(OUTPUT_LED_B);
 		}
 	} else {
 		if (rxptr < 4 || (rxptr - 4) <= ubx->length) {
@@ -136,6 +137,7 @@ void uart_process_rx()
 
 			receiving = false;
 			rxptr = 0;
+			output_low(OUTPUT_LED_B);
 		}
 	}
 
