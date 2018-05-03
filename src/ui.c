@@ -1,6 +1,7 @@
 
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 
 #include "oled.h"
 #include "regs.h"
@@ -56,7 +57,7 @@ static inline void blit_string(const struct font *font, const char *str,
 		if (c >= '!' && c <= '~') {
 			blit_font(font, c - '!', x, y, mode);
 		} else {  // Space (or invalid character, meh)
-			oled_fill(x, y, font->width, font->height, OLED_BLIT_NORMAL);
+			oled_fill(x, y, font->width, font->height, mode);
 		}
 		x += font->width;
 		if (x > OLED_WIDTH) {
@@ -348,6 +349,50 @@ static void render_status_signal()
 }
 
 
+static void render_diff()
+{
+	uint64_t value = ui_state.pps.i.output;
+	if (value == 0) {
+		return;
+	}
+	uint64_t round_to = 100000;
+	uint64_t osc_value = 0;
+	while (osc_value < value) {
+		osc_value += round_to;
+	}
+	if (osc_value - value > value - (osc_value - round_to)) {
+		osc_value -= round_to;
+	}
+	// This calls __udivsi3 and is broken for some reason...
+	//uint64_t osc_value = ((value + round_to/2) / round_to) * round_to;
+
+	int64_t diff = ((int64_t)value - osc_value);
+
+	// "-xxxx"
+	const unsigned int x = OLED_WIDTH - font_small_ascii.width * (1 + 5);
+	const unsigned int y = 0;
+	oled_fill(x, y, OLED_WIDTH - x, font_small_ascii.height + 2, OLED_BLIT_INVERT);
+
+	for (unsigned int dy = 0; dy < 3; dy++) {
+		for (unsigned int dx = 0; dx <= dy; dx++) {
+			oled_draw_pixel(x + dx, y + font_small_ascii.height - 1 + dy, false);
+		}
+	}
+
+	if (labs(diff) > 9999) {
+		// TODO: Render at least something in this case?
+		return;
+	}
+
+	char str[10];
+	bzero(str, sizeof(str));
+	str_format_int(str, diff);
+	blit_string(&font_small_ascii, str,
+				x + font_small_ascii.width / 2 + (5 - strlen(str)) * font_small_ascii.width,
+				y + 1, OLED_BLIT_INVERT, 0);
+}
+
+
 static void reset_integration()
 {
 	ui_state.pps.i.counter = 0;
@@ -512,6 +557,7 @@ void ui_on_frame()
 	}
 	DIRTY_RUN(value) {
 		render_value();
+		render_diff();
 	}
 	DIRTY_RUN(menu) {
 		render_menu_bar();

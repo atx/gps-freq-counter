@@ -2,6 +2,7 @@
 #pragma once
 
 #include <stdbool.h>
+#include <string.h>
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 #define BIT(n) (1 << (n))
@@ -36,4 +37,26 @@ static inline bool str_startswith(const char *haystack, const char *needle)
 		}
 	}
 	return *needle == '\0';
+}
+
+static inline void str_format_int(char *str, int i)
+{
+	// Assumes the caller has long enough buffer
+	if (i < 0) {
+		*str++ = '-';
+		i *= -1;
+	}
+	char *start = str;
+	do {
+		*str++ = '0' + (i % 10);
+		i /= 10;
+	} while (i != 0);
+	*str = '\0';
+
+	size_t len = strlen(start);
+	for (unsigned int i = 0; i < len / 2; i++) {
+		char tmp = start[i];
+		start[i] = start[len - i - 1];
+		start[len - i - 1] = tmp;
+	}
 }
