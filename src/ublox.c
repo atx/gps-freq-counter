@@ -99,6 +99,9 @@ static void dispatch_msg(const struct ublox_header *ubx)
 }
 
 
+// This will eventually overflow, but we want to use it only on startup anyway
+static unsigned int rx_byte_counter = 0;
+
 void uart_process_rx()
 {
 	static uint8_t rxbuff[256];
@@ -108,6 +111,7 @@ void uart_process_rx()
 	static uint8_t prev_c = 0x00;
 	static bool receiving = false;
 
+	rx_byte_counter++;
 	char c = uart_read();
 	if (rxptr >= ARRAY_SIZE(rxbuff)) {
 		// This should never happen, but just in case...
@@ -158,6 +162,12 @@ static const uint8_t init_messages[] = {
 void uart_process_tx()
 {
 	static uint8_t cnt = 0;
+
+	if (rx_byte_counter < 100) {
+		// The ublox module hasn't been properly initilized yet,
+		// let's just wait for a bunch of the $GP* messages
+		return;
+	}
 
 	if (cnt == ARRAY_SIZE(init_messages)) {
 		return;
