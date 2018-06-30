@@ -8,6 +8,7 @@
 #include "utils.h"
 #include "oled.h"
 #include "ui.h"
+#include "usb.h"
 
 
 #define TICK_EVERY_MS		100
@@ -18,6 +19,9 @@ void main()
 	ui_init();
 	timems_t next_tick = time_ms();
 	while (true) {
+		if (time_ms() > 1000) {
+			output_high(OUTPUT_USB);
+		}
 		uint32_t ackr = ack_status();
 
 		if (ackr) {
@@ -40,6 +44,12 @@ void main()
 
 		if (status_is_set(STATUS_UART_TXEMPTY)) {
 			uart_process_tx();
+		}
+		if (status_is_set(STATUS_USB_RXDONE)) {
+			usb_rx_handle();
+		}
+		if (status_is_set(STATUS_USB_TXEMPTY)) {
+			usb_tx_handle();
 		}
 
 		if (time_ms() < next_tick) {

@@ -6,7 +6,7 @@
 
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
 #define BIT(n) (1 << (n))
-#define SELECT_BYTE(v, n) (v >> (8*(n)) & 0xff)
+#define SELECT_BYTE(v, n) ((v) >> (8*(n)) & 0xff)
 
 #define MIN(a, b) ({ \
 	__typeof__(a) _a = (a); \
@@ -21,6 +21,8 @@
 })
 
 #define CLAMP(v, mi, mx) MIN(MAX(v, mi), mx)
+
+#define BYTES_TO_SHORT(hi, lo) (((hi) << 8) | (lo))
 
 static inline void nop_loop(unsigned long count)
 {

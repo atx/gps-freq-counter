@@ -9,6 +9,8 @@
 #define STATUS_REG			(*((volatile uint32_t *)0x31000000l))
 #define STATUS_SPI_IDLE			BIT(0)
 #define STATUS_UART_TXEMPTY		BIT(1)
+#define STATUS_USB_RXDONE		BIT(2)
+#define STATUS_USB_TXEMPTY		BIT(3)
 
 static inline bool status_is_set(uint32_t mask)
 {
@@ -21,6 +23,7 @@ static inline bool status_is_set(uint32_t mask)
 #define OUTPUT_LED_A		BIT(2)
 #define OUTPUT_LED_B		BIT(3)
 #define OUTPUT_SELECT_EX	BIT(4)
+#define OUTPUT_USB			BIT(5)
 
 static inline void output_high(uint32_t mask)
 {
@@ -75,3 +78,6 @@ static inline uint32_t pps_value()
 {
 	return PPS_REG;
 }
+
+#define USB_REG				(*((volatile uint32_t *)0x31000018l))
+#define USB_REG_ACK			BIT(7)

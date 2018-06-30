@@ -78,6 +78,11 @@ class Top(implicit val conf: TopConfig) extends RawModule {
         val reg = Output(UInt(32.W))
       }
     } else { null }
+
+    val usb = new Bundle {
+      val data = new gfc.usb.USBBundle
+      val pullup = Output(Bool())
+    }
   })
 
   val mainClock = if (conf.isSim) {
@@ -115,9 +120,23 @@ class Top(implicit val conf: TopConfig) extends RawModule {
     pps.io.signal := Mux(signalSelectExt,
       Utils.synchronize(io.signal), Utils.synchronize(io.oscillator.toBits === 1.U))
 
+    val usbDiv = conf.mainClockFreq / 1500000
+    val usbWrap = Module(new usb.AnalogWrapper)
+    io.usb.data <> usbWrap.io.usb
+    val usbSync = Module(new usb.Synchronizer(usbDiv))
+    usbWrap.io.out <> usbSync.io.usb
+    val usbTrs = Module(new usb.Transmitter(usbDiv))
+    usbTrs.io.usb <> usbWrap.io.in
+    usbWrap.io.drive := usbTrs.io.drive
+    val usbRec = Module(new usb.Receiver)
+    usbSync.io.stream <> usbRec.io.stream
+    val usbPeriph = Module(new usb.Peripheral)
+    usbRec.io.bytes <> usbPeriph.io.usb.in
+    usbPeriph.io.usb.out <> usbTrs.io.in
 
     val statusReg = Module(new InputRegister)
     statusReg.io.value := Cat(
+      usbPeriph.io.status.txEmpty, usbPeriph.io.status.rxDone,
       uart.io.status.txEmpty, spi.io.status.idle
       )
     val oledRawDC = Wire(Bool())
@@ -126,7 +145,8 @@ class Top(implicit val conf: TopConfig) extends RawModule {
       io.oled.rst -> true,
       io.leds.a -> false,
       io.leds.b -> false,
-      signalSelectExt -> false
+      signalSelectExt -> false,
+      io.usb.pullup -> false
       )
     io.oled.dc := Mux(io.oled.spi.cs === false.B, oledRawDC, true.B)
     // millisecond 32-bit timer should overflow after 7 weeks, probably not
@@ -137,7 +157,7 @@ class Top(implicit val conf: TopConfig) extends RawModule {
     val ackReg = AcknowledgeRegister.build(List(
       buttonProcessed, !buttonProcessed,
       uart.io.status.rxFull,
-      pps.io.status.updated
+      pps.io.status.updated,
       ))
 
     var mmDevices =
@@ -145,12 +165,13 @@ class Top(implicit val conf: TopConfig) extends RawModule {
         (0x00000000l, 18, fwMem.io.bus),
         (0x20000000l, 18, rwMem.io.bus),
         (0xfffff000l, 20, stackMem.io.bus),
-        (0x30000000l, 21, spi.io.bus)
+        (0x30000000l, 21, spi.io.bus),
+        (0x32000000l, 26, usbPeriph.io.bus.mem)
       ) ++
       MemoryMux.singulars(
         0x31000000l,
         statusReg.io.bus, outputReg.io.bus, msTimer.io.bus, ackReg.io.bus,
-        uart.io.bus, pps.io.bus
+        uart.io.bus, pps.io.bus, usbPeriph.io.bus.reg
       )
     if (conf.isSim) {
       val debugReg = Module(new OutputRegister(0.U(32.W)))

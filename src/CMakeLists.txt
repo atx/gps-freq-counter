@@ -30,7 +30,7 @@ include_directories (${CMAKE_BINARY_DIR})
 
 set (COMMON_CSRCS reset.c reset.s linker.ld)
 
-add_executable (gfc main.c sprites_data.h ublox.c ui.c oled.c spi.c ${COMMON_CSRCS})
+add_executable (gfc main.c sprites_data.h ublox.c ui.c oled.c spi.c usb.c ${COMMON_CSRCS})
 add_executable (test_fib test_fib.c ${COMMON_CSRCS})
 add_executable (test_spi test_spi.c spi.c ${COMMON_CSRCS})
 

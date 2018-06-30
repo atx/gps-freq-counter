@@ -94,10 +94,17 @@ set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -
 set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -fall
 set_location_assignment PIN_110 -to io_button
 set_instance_assignment -name IO_STANDARD "3.3 V SCHMITT TRIGGER" -to io_button
+set_location_assignment PIN_30 -to io_usb_pullup
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to io_usb_pullup
+set_global_assignment -name VERILOG_FILE ../build/InoutWrapper.v
 set_global_assignment -name QSYS_FILE altera_internal_oscillator.qsys
 set_global_assignment -name VERILOG_FILE ../build/ResetSignal.v
 set_global_assignment -name VERILOG_FILE ../build/VerilogInitializedMemoryBase.v
 set_global_assignment -name VERILOG_FILE ../build/picorv32.v
 set_global_assignment -name VERILOG_FILE ../build/Top.v
 set_global_assignment -name QIP_FILE altera_altpll.qip
+set_location_assignment PIN_33 -to io_usb_data_dm
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to io_usb_data_dm
+set_instance_assignment -name IO_STANDARD "3.3-V LVCMOS" -to io_usb_data_dp
+set_location_assignment PIN_32 -to io_usb_data_dp
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
