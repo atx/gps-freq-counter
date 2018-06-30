@@ -2,6 +2,7 @@
 
 import argparse
 import itertools
+import math
 import os
 
 # Converts raw objdump binary file to format readable by $readmemh() in Verilog
@@ -20,9 +21,8 @@ if __name__ == "__main__":
     with open(args.input, "rb") as fin, open(args.output, "w") as fout:
         if args.format == "mif":
             size = os.path.getsize(args.input)
-            assert size % 4 == 0
             fout.write("\n".join(
-                ["DEPTH = {};".format(size // 4),
+                ["DEPTH = {};".format(math.ceil(size / 4)),
                  "WIDTH = 32;",
                  "DATA_RADIX = HEX;",
                  "CONTENT",
@@ -33,6 +33,8 @@ if __name__ == "__main__":
             d = fin.read(4)
             if len(d) == 0:
                 break
+            if len(d) < 4:
+                d += b"\x00" * (4 - len(d))
             word = 0x00000000
             for i, c in enumerate(d):
                 word |= (c << (i * 8))
