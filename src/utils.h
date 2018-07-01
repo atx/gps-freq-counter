@@ -62,3 +62,11 @@ static inline void str_format_int(char *str, int i)
 		start[len - i - 1] = tmp;
 	}
 }
+
+static inline uint8_t *serialize_uint32(uint8_t *b, uint32_t v)
+{
+	for (unsigned int i = 0; i < 4; i++) {
+		*b++ = SELECT_BYTE(v, i);
+	}
+	return b;
+}

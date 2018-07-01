@@ -4,6 +4,7 @@
 #include "usb.h"
 #include "usb_protocol.h"
 #include "cmds.h"
+#include "ui.h"
 
 
 static const struct usb_device_descriptor device_descriptor = {
@@ -192,6 +193,7 @@ static void handle_get_descriptor(struct usb_setup_packet *p)
 
 static void handle_command_in(struct usb_setup_packet *p)
 {
+	static uint8_t buff[64];
 	static const char *timestamp = __TIMESTAMP__;
 	const uint8_t *ptr = NULL;
 	uint8_t len = 0;
@@ -199,6 +201,14 @@ static void handle_command_in(struct usb_setup_packet *p)
 	case CMD_GET_BUILD_DATE:
 		ptr = (const uint8_t *)timestamp;
 		len = strlen(timestamp);
+		break;
+	case CMD_GET_MEASUREMENT:
+		ptr = buff;
+		struct pps_measurement msm = ui_state_last_measurement();
+		uint8_t *p = buff;
+		p = serialize_uint32(p, msm.timestamp);
+		p = serialize_uint32(p, msm.value);
+		len = 8;
 		break;
 	default:
 		break;

@@ -579,3 +579,12 @@ void ui_on_gps_svinfo(unsigned int n_sats)
 	ui_state.gps.last_update = time_ms();
 	DIRTY(gps);
 }
+
+
+struct pps_measurement ui_state_last_measurement()
+{
+	return (struct pps_measurement){
+		.value = ui_state.pps.last_value,
+		.timestamp = ui_state.pps.last_update,
+	};
+}
