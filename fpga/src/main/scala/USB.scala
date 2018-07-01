@@ -250,7 +250,7 @@ class Transmitter(val cyclesPerBit: Int) extends Module {
     }
   }
 
-  val sIdle :: sPreSync :: sSync :: sData :: sStuff :: sEop :: Nil = Enum(6)
+  val sIdle :: sPreSync :: sSync :: sData :: sStuff :: sEop :: sLastStuff :: Nil = Enum(7)
   val state = RegInit(sIdle)
 
   val buffer = Reg(UInt(8.W))
@@ -300,27 +300,42 @@ class Transmitter(val cyclesPerBit: Int) extends Module {
     }
     is (sData) {
       when (sampleCnt.inc()) {
-        when (io.in.eop && bitCnt === 7.U) {
-          state := sEop
-          bitCnt := 0.U
-        }
-        when (buffer(7) === 1.U) {
-          stuff := stuff + 1.U
-          when (stuff === 5.U) {
-            state := sStuff
-          }
-        } otherwise {
-          stuff := 0.U
-        }
+        //when (io.in.eop && bitCnt === 7.U) {
+        //  state := sEop
+        //  bitCnt := 0.U
+        //}
         nextBit(buffer(7))
 
         when (bitCnt === 7.U) {
           bitCnt := 0.U
-          buffer := Reverse(io.in.byte)
+          when (io.in.eop) {
+            state := sEop
+          } otherwise {
+            buffer := Reverse(io.in.byte)
+          }
         } otherwise {
           bitCnt := bitCnt + 1.U
           buffer := buffer << 1.U
         }
+
+        when (buffer(7) === 1.U) {
+          stuff := stuff + 1.U
+          when (stuff === 5.U) {
+            when (bitCnt === 7.U && io.in.eop) {
+              state := sLastStuff
+            } otherwise {
+              state := sStuff
+            }
+          }
+        } otherwise {
+          stuff := 0.U
+        }
+      }
+    }
+    is (sLastStuff) {
+      when (sampleCnt.inc()) {
+        nextBit(false.B)
+        state := sEop
       }
     }
     is (sEop) {
@@ -390,7 +405,7 @@ class Peripheral extends Module {
   val wToReg = io.bus.reg.valid && io.bus.reg.wstrb(0)
   val wToAckBit = io.bus.reg.wdata(7)
 
-  when (!txReady && wToReg && !wToAckBit) {
+  when (wToReg && !wToAckBit && !isFull) {
     // TODO: Write during TX??
     txCounter := io.bus.reg.wdata(3, 0)
     txReady := true.B
@@ -408,9 +423,6 @@ class Peripheral extends Module {
       when (io.usb.in.valid) {
         val pid = io.usb.in.byte
         when (pid === Protocol.PID.SETUP || pid === Protocol.PID.OUT) {
-          when (pid === Protocol.PID.SETUP) {
-            txReady := false.B
-          }
           state := sDrop
         } .elsewhen (pid === Protocol.PID.DATA0 || pid === Protocol.PID.DATA1) {
           when (isFull) {
@@ -442,11 +454,11 @@ class Peripheral extends Module {
     }
     is (sTx) {
       io.usb.out.eop := false.B
-      when (txPtr === txCounter) {
-        state := sPostTx
-      }
       when (gfc.Utils.risingEdge(io.usb.out.ack)) {
         txPtr := txPtr + 1.U
+        when (txPtr === txCounter - 1.U) {
+          state := sPostTx
+        }
       }
     }
     is (sPostTx) {
@@ -472,6 +484,10 @@ class Peripheral extends Module {
       when (io.usb.in.eop) {
         state := sAck
         isFull := true.B
+        // Whatever we are TX-ing is not likely to be valid after this anyway
+        // Also beware: the code needs to flush its buffer too at this point -
+        // executing RX handler before TX handler is a good idea
+        txReady := false.B
       }
     }
     is (sNak) {
