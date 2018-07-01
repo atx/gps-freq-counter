@@ -408,6 +408,9 @@ class Peripheral extends Module {
       when (io.usb.in.valid) {
         val pid = io.usb.in.byte
         when (pid === Protocol.PID.SETUP || pid === Protocol.PID.OUT) {
+          when (pid === Protocol.PID.SETUP) {
+            txReady := false.B
+          }
           state := sDrop
         } .elsewhen (pid === Protocol.PID.DATA0 || pid === Protocol.PID.DATA1) {
           when (isFull) {
