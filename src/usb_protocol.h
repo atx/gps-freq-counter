@@ -98,6 +98,19 @@ struct usb_device_descriptor {
 } __attribute__((packed));
 
 
+struct usb_interface_descriptor {
+  uint8_t bLength;            /* sizeof(usb_interface_descriptor) (9) */
+  uint8_t bDescriptorType;    /* DT_INTERFACE (4) */
+  uint8_t bInterfaceNumber;   /* Which interface this describes.  Usually 0. */
+  uint8_t bAlternateSetting;  /* ??? */
+  uint8_t bNumEndpoints;      /* Number of endpoints, minus 1 */
+  uint8_t bInterfaceClass;    /* Class code */
+  uint8_t bInterfaceSubclass; /* Class sub-code */
+  uint8_t bInterfaceProtocol; /* Protocol code, assigned by USB */
+  uint8_t iInterface;         /* Index of string for this interface */
+} __attribute__((packed));
+
+
 struct usb_configuration_descriptor {
   uint8_t  bLength;
   uint8_t  bDescriptorType;
@@ -107,7 +120,7 @@ struct usb_configuration_descriptor {
   uint8_t  iConfiguration;
   uint8_t  bmAttributes;
   uint8_t  bMaxPower;
-  uint8_t  data[];
+  struct usb_interface_descriptor interface;
 } __attribute__((packed));
 
 

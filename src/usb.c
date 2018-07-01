@@ -27,12 +27,23 @@ static const struct usb_device_descriptor device_descriptor = {
 static const struct usb_configuration_descriptor configuration_descriptor = {
 	.bLength = 9,
 	.bDescriptorType = USB_DESCRIPTOR_CONFIGURATION,
-	.wTotalLength = 9,
-	.bNumInterfaces = 0,  // This confuses the kernel somewhat, but seems to work fine
+	.wTotalLength = 9 + 9,
+	.bNumInterfaces = 1,
 	.bConfigurationValue = 1,
 	.iConfiguration = 0,
 	.bmAttributes = 0x80,
-	.bMaxPower = 200 / 2  // 200mA
+	.bMaxPower = 200 / 2,  // 200mA
+	.interface = {
+		.bLength = 9,
+		.bDescriptorType = USB_DESCRIPTOR_INTERFACE,
+		.bInterfaceNumber = 0,
+		.bAlternateSetting = 0,
+		.bNumEndpoints = 0,
+		.bInterfaceClass = 0xff,  // Vendor class
+		.bInterfaceSubclass = 0x00,
+		.bInterfaceProtocol = 0x00,
+		.iInterface = 0
+	}
 };
 
 
@@ -161,7 +172,7 @@ static void handle_get_descriptor(struct usb_setup_packet *p)
 	case USB_DESCRIPTOR_CONFIGURATION:
 		if (p->wValueL == 0) {
 			ptr = (uint8_t *)&configuration_descriptor;
-			len = sizeof(configuration_descriptor);
+			len = configuration_descriptor.wTotalLength;
 		}
 		break;
 	case USB_DESCRIPTOR_STRING:
