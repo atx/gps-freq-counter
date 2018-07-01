@@ -115,9 +115,10 @@ class Synchronizer(val cyclesPerBit: Int) extends Module {
     return d
   }
 
-  io.stream.bit := false.B
-  io.stream.se0 := false.B
-  io.stream.valid := false.B
+  val buff = Reg(new BitStream)
+  io.stream := buff
+  buff.valid := false.B
+  buff.se0 := false.B
 
   val bitCntr = Counter(cyclesPerBit)
 
@@ -130,10 +131,10 @@ class Synchronizer(val cyclesPerBit: Int) extends Module {
     val nd = decode(io.usb)
 
     when (pd.jk && nd.jk) {
-      io.stream.valid := true.B
-      io.stream.bit := pd.k && nd.k || pd.j && nd.j
+      buff.valid := true.B
+      buff.bit := pd.k && nd.k || pd.j && nd.j
     } .elsewhen (nd.se0) {
-      io.stream.se0 := true.B
+      buff.se0 := true.B
     }
   }
   when (RegNext(io.usb.toBits) =/= io.usb.toBits) {
