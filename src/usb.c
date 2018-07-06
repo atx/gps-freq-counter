@@ -126,36 +126,59 @@ static void parse_setup_packet(struct usb_setup_packet *p)
 }
 
 
-struct tx_buffer {
-	const uint8_t *ptr;
-	uint8_t remaining;
-	bool finished;
+struct usb_state {
+	bool data_pid_switch;
+	bool initialized;
+	struct {
+		const uint8_t *ptr;
+		uint8_t remaining;
+		bool finished;
+	} tx_buffer;
 };
 
-struct tx_buffer tx_buffer = {
-	.ptr = NULL,
-	.remaining = 0,
-	.finished = true,
+
+static struct usb_state usb_state = {
+	.initialized = false,
+	.tx_buffer = {
+		.ptr = NULL,
+		.remaining = 0,
+		.finished = true,
+	},
 };
 
 
 static void tx_buffer_insert(const uint8_t *ptr, uint8_t len)
 {
-	tx_buffer.ptr = ptr;
-	tx_buffer.remaining = len;
-	tx_buffer.finished = false;
+	usb_state.tx_buffer.ptr = ptr;
+	usb_state.tx_buffer.remaining = len;
+	usb_state.tx_buffer.finished = false;
 }
+
 
 static bool tx_buffer_empty()
 {
-	return tx_buffer.remaining == 0;
+	return usb_state.tx_buffer.remaining == 0;
 }
+
 
 static uint8_t tx_buffer_pop()
 {
-	tx_buffer.remaining--;
-	return *tx_buffer.ptr++;
+	usb_state.tx_buffer.remaining--;
+	return *usb_state.tx_buffer.ptr++;
 }
+
+
+static bool tx_buffer_finished()
+{
+	return usb_state.tx_buffer.finished;
+}
+
+
+static void tx_buffer_finish()
+{
+	usb_state.tx_buffer.finished = true;
+}
+
 
 static void handle_get_descriptor(struct usb_setup_packet *p)
 {
@@ -244,7 +267,7 @@ void usb_rx_handle()
 		// WTF v2?
 		goto done;
 	}
-	data_switch = pid == USB_PID_DATA0;
+	usb_state.data_pid_switch = pid == USB_PID_DATA0;
 
 	struct usb_setup_packet p;
 	parse_setup_packet(&p);
@@ -253,14 +276,15 @@ void usb_rx_handle()
 		handle_get_descriptor(&p);
 	} else if (p.bmRequestType == USB_BM_REQUEST_TYPE_TYPE_STANDARD &&
 			(p.bRequest == USB_BREQUEST_SET_ADDRESS || p.bRequest == USB_BREQUEST_SET_CONFIGURATION)) {
-		tx_buffer.finished = false;  // Trigger zero-length response
+		usb_state.initialized = true;
+		tx_buffer_insert(NULL, 0);  // Trigger zero-length response
 	} else if (p.bmRequestType == (USB_BM_REQUEST_TYPE_DIRECTION | USB_BM_REQUEST_TYPE_TYPE_VENDOR)) {
 		handle_command_in(&p);
 	} else if (p.bmRequestType == USB_BM_REQUEST_TYPE_TYPE_VENDOR) {
 		handle_command_out(&p);
 	} else {
 		// Wat?
-		tx_buffer.finished = true;
+		usb_state.tx_buffer.finished = true;
 	}
 
 done:
@@ -270,12 +294,12 @@ done:
 
 void usb_tx_handle()
 {
-	if (tx_buffer.finished) {
+	if (tx_buffer_finished()) {
 		return;
 	}
 
 	uint8_t len = 0;
-	USB_MEMORY[len++] = next_data();
+	USB_MEMORY[len++] = next_data_pid();
 	uint16_t crc = 0xffff;
 	while (!tx_buffer_empty() && len < 9) {
 		uint8_t v = tx_buffer_pop();
@@ -286,7 +310,7 @@ void usb_tx_handle()
 	USB_MEMORY[len++] = SELECT_BYTE(crc, 0);
 	USB_MEMORY[len++] = SELECT_BYTE(crc, 1);
 	if (tx_buffer_empty()) {
-		tx_buffer.finished = true;
+		tx_buffer_finish();
 	}
 	USB_REG = len;
 }

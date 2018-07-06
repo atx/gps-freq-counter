@@ -3,6 +3,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
+#include "usb.h"
 #include "oled.h"
 #include "regs.h"
 
@@ -126,6 +127,7 @@ struct ui_state {
 		bool pps : 1;
 		bool gps : 1;
 		bool value : 1;
+		bool usb : 1;
 	} dirty;
 };
 
@@ -160,7 +162,8 @@ static struct ui_state ui_state = {
 		.menu = true,
 		.pps = true,
 		.gps = true,
-		.value = true
+		.value = true,
+		.usb = true,
 	}
 };
 
@@ -253,18 +256,21 @@ static void render_menu_bar()
 }
 
 
+#define STATUS_X_POSITION(n) (14 * (n))
+
+
 static void render_status_key(enum key_state state)
 {
 	const struct sprite *s =
 		state == KEY_STATE_NONE ? &sprite_status_key_1 :
 		(state == KEY_STATE_SHORT ? &sprite_status_key_2 : &sprite_status_key_3);
-	blit_sprite(s, 0, 0, OLED_BLIT_NORMAL);
+	blit_sprite(s, STATUS_X_POSITION(0), 0, OLED_BLIT_NORMAL);
 }
 
 
 static void render_status_gps()
 {
-	const unsigned int x = 14;
+	const unsigned int x = STATUS_X_POSITION(1);
 	const unsigned int y = 0;
 	const struct sprite *s = ui_state.gps.has_fix ? &sprite_status_gps_fix : &sprite_status_gps_nofix;
 	blit_sprite(s, x, y, OLED_BLIT_NORMAL);
@@ -280,7 +286,7 @@ static void render_status_gps()
 
 static void render_status_pps()
 {
-	const unsigned int x = 28;
+	const unsigned int x = STATUS_X_POSITION(2);
 	const unsigned int y = 0;
 	const struct sprite *s = ui_state.pps.flip ? &sprite_status_pps_1 : &sprite_status_pps_2;
 
@@ -289,7 +295,7 @@ static void render_status_pps()
 
 static void render_status_integration()
 {
-	const unsigned int x = 42 + 1;
+	const unsigned int x = STATUS_X_POSITION(3) + 1;
 	const unsigned int width = 8;
 	const unsigned int y = 0;
 
@@ -347,6 +353,22 @@ static void render_status_signal()
 
 	counter = (counter + 1);
 }
+
+
+static void render_status_usb()
+{
+	bool is = usb_is_connected();
+	if (ui_state.dirty.usb != is) {
+		// Non-canonical use of the dirty bit, but whatever
+		ui_state.dirty.usb = is;
+		const struct sprite *s =
+			is ? &sprite_status_usb_on : &sprite_status_usb_off;
+		blit_sprite(s, STATUS_X_POSITION(4), 0, OLED_BLIT_NORMAL);
+	}
+}
+
+
+#undef STATUS_X_POSITION
 
 
 static void render_diff()
@@ -555,6 +577,7 @@ void ui_on_frame()
 		render_status_pps();
 		render_status_integration();
 	}
+	render_status_usb();
 	DIRTY_RUN(value) {
 		render_value();
 		render_diff();
