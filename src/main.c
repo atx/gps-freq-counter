@@ -13,43 +13,56 @@
 
 #define TICK_EVERY_MS		100
 
+struct bit_handler {
+	uint32_t mask;
+	void (*fn)();
+};
+
+static struct bit_handler ack_handlers[] = {
+	{ ACK_BUTTON_DOWN, ui_on_key_down },
+	{ ACK_BUTTON_UP, ui_on_key_up } ,
+	{ ACK_UART_RXFULL, uart_process_rx },
+	{ ACK_PPS, ui_on_pps },
+};
+
+static struct bit_handler status_handlers[] = {
+	{ STATUS_UART_TXEMPTY, uart_process_tx },
+	{ STATUS_USB_RXDONE, usb_rx_handle },
+	{ STATUS_USB_TXEMPTY, usb_tx_handle },
+};
+
+static void call_handlers(uint32_t val, struct bit_handler *handlers, size_t length)
+{
+	for (size_t i = 0; i < length; i++) {
+		if (val & handlers[i].mask) {
+			handlers[i].fn();
+		}
+	}
+}
+
+
 void main()
 {
 	oled_init();
 	ui_init();
 	timems_t next_tick = time_ms();
 	while (true) {
+
 		if (time_ms() > 1000) {
 			output_high(OUTPUT_USB);
 		}
-		uint32_t ackr = ack_status();
 
+		uint32_t ackr = ack_status();
 		if (ackr) {
 			output_high(OUTPUT_LED_A);
+			call_handlers(ackr, ack_handlers, ARRAY_SIZE(ack_handlers));
+			ack_write(ackr);
 		}
 
-		if (ackr & ACK_BUTTON_DOWN) {
-			ui_on_key_down();
-		}
-		if (ackr & ACK_BUTTON_UP) {
-			ui_on_key_up();
-		}
-		if (ackr & ACK_UART_RXFULL) {
-			uart_process_rx();
-		}
-		if (ackr & ACK_PPS) {
-			ui_on_pps(pps_value());
-		}
-		ack_write(ackr);
-
-		if (status_is_set(STATUS_UART_TXEMPTY)) {
-			uart_process_tx();
-		}
-		if (status_is_set(STATUS_USB_RXDONE)) {
-			usb_rx_handle();
-		}
-		if (status_is_set(STATUS_USB_TXEMPTY)) {
-			usb_tx_handle();
+		uint32_t stat = STATUS_REG;
+		if (stat) {
+			output_high(OUTPUT_LED_A);
+			call_handlers(stat, status_handlers, ARRAY_SIZE(status_handlers));
 		}
 
 		if (time_ms() < next_tick) {
