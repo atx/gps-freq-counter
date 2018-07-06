@@ -120,23 +120,12 @@ class Top(implicit val conf: TopConfig) extends RawModule {
     pps.io.signal := Mux(signalSelectExt,
       Utils.synchronize(io.signal), Utils.synchronize(io.oscillator.toBits === 1.U))
 
-    val usbDiv = conf.mainClockFreq / 1500000
-    val usbWrap = Module(new usb.AnalogWrapper)
-    io.usb.data <> usbWrap.io.usb
-    val usbSync = Module(new usb.Synchronizer(usbDiv))
-    usbWrap.io.out <> usbSync.io.usb
-    val usbTrs = Module(new usb.Transmitter(usbDiv))
-    usbTrs.io.usb <> usbWrap.io.in
-    usbWrap.io.drive := usbTrs.io.drive
-    val usbRec = Module(new usb.Receiver)
-    usbSync.io.stream <> usbRec.io.stream
-    val usbPeriph = Module(new usb.Peripheral)
-    usbRec.io.bytes <> usbPeriph.io.usb.in
-    usbPeriph.io.usb.out <> usbTrs.io.in
+    val usb = Module(new gfc.usb.USB(conf.mainClockFreq / 1500000))
+    usb.io.usb <> io.usb.data
 
     val statusReg = Module(new InputRegister)
     statusReg.io.value := Cat(
-      usbPeriph.io.status.txEmpty, usbPeriph.io.status.rxDone,
+      usb.io.status.txEmpty, usb.io.status.rxDone,
       uart.io.status.txEmpty, spi.io.status.idle
       )
     val oledRawDC = Wire(Bool())
@@ -166,12 +155,12 @@ class Top(implicit val conf: TopConfig) extends RawModule {
         (0x20000000l, 18, rwMem.io.bus),
         (0xfffff000l, 20, stackMem.io.bus),
         (0x30000000l, 21, spi.io.bus),
-        (0x32000000l, 26, usbPeriph.io.bus.mem)
+        (0x32000000l, 26, usb.io.bus.mem)
       ) ++
       MemoryMux.singulars(
         0x31000000l,
         statusReg.io.bus, outputReg.io.bus, msTimer.io.bus, ackReg.io.bus,
-        uart.io.bus, pps.io.bus, usbPeriph.io.bus.reg
+        uart.io.bus, pps.io.bus, usb.io.bus.reg
       )
     if (conf.isSim) {
       val debugReg = Module(new OutputRegister(0.U(32.W)))

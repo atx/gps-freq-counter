@@ -503,3 +503,35 @@ class Peripheral extends Module {
     }
   }
 }
+
+
+class USB(div: Int) extends Module {
+  val io = IO(new Bundle {
+    val usb = new gfc.usb.USBBundle
+    val bus = new Bundle {
+      val reg = Flipped(new gfc.MemoryBus)
+      val mem = Flipped(new gfc.MemoryBus)
+    }
+    val status = new Bundle {
+      val rxDone = Output(Bool())
+      val txEmpty = Output(Bool())
+    }
+  })
+
+  val wrap  = Module(new AnalogWrapper)
+  io.usb <> wrap.io.usb
+  val sync = Module(new Synchronizer(div))
+  wrap.io.out <> sync.io.usb
+  val trs = Module(new Transmitter(div))
+  trs.io.usb <> wrap.io.in
+  wrap.io.drive := trs.io.drive
+  val rec = Module(new Receiver)
+  sync.io.stream <> rec.io.stream
+  val periph = Module(new Peripheral)
+  rec.io.bytes <> periph.io.usb.in
+  periph.io.usb.out <> trs.io.in
+
+  io.bus.reg <> periph.io.bus.reg
+  io.bus.mem <> periph.io.bus.mem
+  io.status := periph.io.status
+}
