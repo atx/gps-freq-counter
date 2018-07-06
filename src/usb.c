@@ -134,6 +134,7 @@ struct usb_state {
 		uint8_t remaining;
 		bool finished;
 	} tx_buffer;
+	uint8_t shared_buffer[64];
 };
 
 
@@ -214,27 +215,48 @@ static void handle_get_descriptor(struct usb_setup_packet *p)
 }
 
 
+struct command_handler {
+	enum cmd cmd;
+	const uint8_t *(*fn)(struct usb_setup_packet *, uint8_t *);
+};
+
+
+const uint8_t *command_get_build_date(struct usb_setup_packet *setup, uint8_t *len)
+{
+	static const char *timestamp = __TIMESTAMP__;
+	*len = strlen(timestamp);
+	return (const uint8_t *)timestamp;
+}
+
+
+const uint8_t *command_get_measurement(struct usb_setup_packet *setup, uint8_t *len)
+{
+	uint8_t *ptr = usb_state.shared_buffer;
+	uint8_t *p = ptr;
+	struct pps_measurement msm = ui_state_last_measurement();
+	p = serialize_uint32(p, msm.timestamp);
+	p = serialize_uint32(p, msm.value);
+	*len = 8;
+	return ptr;
+}
+
+
+static struct command_handler command_handlers[] = {
+	{ CMD_GET_BUILD_DATE, command_get_build_date },
+	{ CMD_GET_MEASUREMENT, command_get_measurement },
+};
+
+
 static void handle_command_in(struct usb_setup_packet *p)
 {
-	static uint8_t buff[64];
-	static const char *timestamp = __TIMESTAMP__;
 	const uint8_t *ptr = NULL;
 	uint8_t len = 0;
-	switch (p->bRequest) {
-	case CMD_GET_BUILD_DATE:
-		ptr = (const uint8_t *)timestamp;
-		len = strlen(timestamp);
-		break;
-	case CMD_GET_MEASUREMENT:
-		ptr = buff;
-		struct pps_measurement msm = ui_state_last_measurement();
-		uint8_t *p = buff;
-		p = serialize_uint32(p, msm.timestamp);
-		p = serialize_uint32(p, msm.value);
-		len = 8;
-		break;
-	default:
-		break;
+
+	for (size_t i = 0; i < ARRAY_SIZE(command_handlers); i++) {
+		if (command_handlers[i].cmd == p->bRequest) {
+			ptr = command_handlers[i].fn(p, &len);
+			break;
+		}
 	}
 
 	tx_buffer_insert(ptr, MIN(len, p->wLength));
