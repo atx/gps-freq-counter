@@ -247,17 +247,21 @@ static void handle_command_out(struct usb_setup_packet *p)
 }
 
 // TODO: Move this to a struct...
-static bool data_switch = false;
+static uint8_t next_data_pid() {
+	usb_state.data_pid_switch = !usb_state.data_pid_switch;
+	return usb_state.data_pid_switch ? USB_PID_DATA0 : USB_PID_DATA1;
+}
 
-static uint8_t next_data() {
-	data_switch = !data_switch;
-	return data_switch ? USB_PID_DATA0 : USB_PID_DATA1;
+
+bool usb_is_connected()
+{
+	return usb_state.initialized;
 }
 
 
 void usb_rx_handle()
 {
-	uint8_t length = USB_REG & 0xf;
+	uint8_t length = USB_REG & USB_REG_LENGTH;
 	if (length < 8) {
 		// WTF?
 		goto done;

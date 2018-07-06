@@ -301,10 +301,6 @@ class Transmitter(val cyclesPerBit: Int) extends Module {
     }
     is (sData) {
       when (sampleCnt.inc()) {
-        //when (io.in.eop && bitCnt === 7.U) {
-        //  state := sEop
-        //  bitCnt := 0.U
-        //}
         nextBit(buffer(7))
 
         when (bitCnt === 7.U) {

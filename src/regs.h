@@ -81,3 +81,4 @@ static inline uint32_t pps_value()
 
 #define USB_REG				(*((volatile uint32_t *)0x31000018l))
 #define USB_REG_ACK			BIT(7)
+#define USB_REG_LENGTH		(BIT(3) | BIT(2) | BIT(1) | BIT(0))
