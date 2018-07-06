@@ -613,3 +613,13 @@ struct pps_measurement ui_state_last_measurement()
 		.timestamp = ui_state.pps.last_update,
 	};
 }
+
+
+struct gps_state ui_state_gps()
+{
+	return (struct gps_state) {
+		.n_sats = ui_state.gps.n_sats,
+		.has_fix = ui_state.gps.has_fix,
+		.timestamp = ui_state.gps.last_update
+	};
+}

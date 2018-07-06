@@ -12,6 +12,7 @@ Command = collections.namedtuple("Command", ["cmd", "length"])
 class Command:
     GET_BUILD_DATE = Command(0x01, 24)
     GET_MEASUREMENT = Command(0x02, 8)
+    GET_GPS_INFO = Command(0x03, 5)
 
 
 class Device:
@@ -39,6 +40,14 @@ class Device:
         self._build_date = dateutil.parser.parse(s)
         return self._build_date
 
+    def fetch_gps_status(self):
+        raw = self.command_in(Command.GET_GPS_INFO)
+        timestamp, value = struct.unpack("<IB", raw)
+        mask = 1 << 7
+        has_fix = bool(value & mask)
+        n_sats = value & ~mask
+        return timestamp, has_fix, n_sats
+
     def fetch_measurement(self):
         raw = self.command_in(Command.GET_MEASUREMENT)
         timestamp, value = struct.unpack("<II", raw)
@@ -55,8 +64,12 @@ if __name__ == "__main__":
     timestamp, value = None, None
     while True:
         new_timestamp, new_value = gfc.fetch_measurement()
+        gps_timestamp, gps_has_fix, gps_n_sats = gfc.fetch_gps_status()
+        if abs(gps_timestamp - new_timestamp) > 2000:
+            gps_timestamp, gps_n_sats, gps_has_fix = None, None, None
         if new_timestamp != timestamp:
-            print("{: 9d}     {: 9d}".format(new_timestamp, new_value))
+            print("{: 9d}     {: 9d}     {: 2d} {}"
+                  .format(new_timestamp, new_value, gps_n_sats, gps_has_fix), flush=True)
         else:
             assert value == new_value, "What? Same timestamp but different values..."
         timestamp, value = new_timestamp, new_value

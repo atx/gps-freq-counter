@@ -21,3 +21,9 @@ struct pps_measurement {
 	timems_t timestamp;
 };
 struct pps_measurement ui_state_last_measurement();
+struct gps_state {
+	uint32_t n_sats;
+	bool has_fix;
+	timems_t timestamp;
+};
+struct gps_state ui_state_gps();

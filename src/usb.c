@@ -241,9 +241,22 @@ const uint8_t *command_get_measurement(struct usb_setup_packet *setup, uint8_t *
 }
 
 
+const uint8_t *command_get_gps_info(struct usb_setup_packet *setup, uint8_t *len)
+{
+	uint8_t *ptr = usb_state.shared_buffer;
+	uint8_t *p = ptr;
+	struct gps_state gps = ui_state_gps();
+	p = serialize_uint32(p, gps.timestamp);
+	*p = gps.n_sats | (gps.has_fix ? BIT(7) : 0);
+	*len = 5;
+	return ptr;
+}
+
+
 static struct command_handler command_handlers[] = {
 	{ CMD_GET_BUILD_DATE, command_get_build_date },
 	{ CMD_GET_MEASUREMENT, command_get_measurement },
+	{ CMD_GET_GPS_INFO, command_get_gps_info },
 };
 
 
