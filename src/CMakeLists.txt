@@ -12,9 +12,9 @@ set (CMAKE_ASM_COMPILER	"${CROSS_COMPILE}as")
 set (CMAKE_OBJCOPY		"${CROSS_COMPILE}objcopy")
 set (CMAKE_SIZE			"${CROSS_COMPILE}size")
 
-set (CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -march=rv32e -mabi=ilp32e")
-set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -ggdb -march=rv32e -mabi=ilp32e -ffunction-sections -mstrict-align")
-set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -specs=nano.specs -nostartfiles -T ${CMAKE_SOURCE_DIR}/linker.ld -Wl,--gc-sections")
+set (CMAKE_ASM_FLAGS "${CMAKE_ASM_FLAGS} -march=rv32i -mabi=ilp32")
+set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os -ggdb -march=rv32i -mabi=ilp32 -ffunction-sections -mstrict-align")
+set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -nostartfiles -T ${CMAKE_SOURCE_DIR}/linker.ld -Wl,--gc-sections")
 
 set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra -Wno-main-return-type -Wno-main -Wno-unused-parameter")
 

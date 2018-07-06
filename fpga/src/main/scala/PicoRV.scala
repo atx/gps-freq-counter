@@ -29,7 +29,7 @@ object picorv32 {
   private val config = Map[String,Param](
       "ENABLE_IRQ" -> 0,
       "PROGADDR_RESET" -> 0x00000000l,
-      "ENABLE_REGS_16_31" -> 0,
+      "ENABLE_REGS_16_31" -> 1,
       "ENABLE_COUNTERS" -> 0,
       "CATCH_ILLINSN" -> 0
     )
