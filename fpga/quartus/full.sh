@@ -18,23 +18,27 @@ OUTDIR=output_files
 SOFFILE=${OUTDIR}/${PROJECT}.sof
 SVFFILE=${OUTDIR}/${PROJECT}.svf
 
-log "Building the firmware"
-pushd ../../src/build
-make
-popd
+if [ "$COMMAND" != "flashonly" ]; then
+	log "Building the firmware"
+	pushd ../../src/build
+	make
+	popd
 
-log "Building Chisel files"
-pushd ..
-sbt run
-popd
+	log "Building Chisel files"
+	pushd ..
+	sbt run
+	popd
+fi
 
-if [ "$COMMAND" != "mifonly" ]; then
-	log "Compiling"
-	quartus_sh --flow compile ${PROJECT}
-else
+if [ "$COMMAND" == "mifonly" ]; then
 	log "Rebuilding MIFs"
 	quartus_cdb --update_mif ${PROJECT}
 	quartus_asm ${PROJECT}
+elif [ "$COMMAND" == "flashonly" ]; then
+	log "Not doing anything"
+else
+	log "Compiling"
+	quartus_sh --flow compile ${PROJECT}
 fi
 
 log "Creating SVF"
