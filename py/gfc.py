@@ -2,6 +2,7 @@
 
 import collections
 import dateutil.parser
+import enum
 import struct
 import usb.core
 import usb.util
@@ -13,9 +14,14 @@ class Command:
     GET_BUILD_DATE = Command(0x01, 24)
     GET_MEASUREMENT = Command(0x02, 8)
     GET_GPS_INFO = Command(0x03, 5)
+    SET_INPUT = Command(0x04, 0)
 
 
 class Device:
+
+    class Input(enum.IntEnum):
+        INTERNAL = 0
+        EXTERNAL = 1
 
     def __init__(self):
         self.dev = usb.core.find(product="GPS Frequency Counter")
@@ -53,20 +59,30 @@ class Device:
         timestamp, value = struct.unpack("<II", raw)
         return timestamp, value
 
+    def select_input(self, select):
+        return self.command_in(Command.SET_INPUT, arg1=int(select))
+
 
 if __name__ == "__main__":
+    import argparse
     import sys
     import time
     # TODO: Make this into a proper script+package
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--input", choices=["internal", "external"])
+    args = parser.parse_args()
+
     gfc = Device()
     print("Firmware build date '{}'".format(gfc.build_date.isoformat(" ")),
           file=sys.stderr)
+
+    if args.input:
+        gfc.select_input(getattr(Device.Input, args.input.upper()))
+
     timestamp, value = None, None
     while True:
         new_timestamp, new_value = gfc.fetch_measurement()
         gps_timestamp, gps_has_fix, gps_n_sats = gfc.fetch_gps_status()
-        if abs(gps_timestamp - new_timestamp) > 2000:
-            gps_timestamp, gps_n_sats, gps_has_fix = None, None, None
         if new_timestamp != timestamp:
             print("{: 9d}     {: 9d}     {: 2d} {}"
                   .format(new_timestamp, new_value, gps_n_sats, gps_has_fix), flush=True)

@@ -15,6 +15,13 @@ void ui_on_frame();
 void ui_on_gps_status(bool has_fix);
 void ui_on_gps_svinfo(unsigned int n_sats);
 
+enum pps_input {
+	PPS_INPUT_INTERNAL,
+	PPS_INPUT_EXTERNAL
+};
+
+void ui_set_input(enum pps_input input);
+
 // TODO: Move state management to a separate file
 struct pps_measurement {
 	uint32_t value;

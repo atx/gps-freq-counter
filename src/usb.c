@@ -253,10 +253,19 @@ const uint8_t *command_get_gps_info(struct usb_setup_packet *setup, uint8_t *len
 }
 
 
+const uint8_t *command_set_input(struct usb_setup_packet *setup, uint8_t *len)
+{
+	ui_set_input(setup->wValueL == 0 ? PPS_INPUT_INTERNAL : PPS_INPUT_EXTERNAL);
+	*len = 0;
+	return NULL;
+}
+
+
 static struct command_handler command_handlers[] = {
 	{ CMD_GET_BUILD_DATE, command_get_build_date },
 	{ CMD_GET_MEASUREMENT, command_get_measurement },
 	{ CMD_GET_GPS_INFO, command_get_gps_info },
+	{ CMD_SET_INPUT, command_set_input },
 };
 
 

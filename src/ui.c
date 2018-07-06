@@ -423,6 +423,32 @@ static void reset_integration()
 	DIRTY(value);
 }
 
+static void menu_force_selection(enum menu_entry entry, unsigned int choice)
+{
+	ui_state.menu.choices[entry] = choice;
+	DIRTY(menu);
+}
+
+
+void ui_set_input(enum pps_input input)
+{
+	unsigned int choice = 0;
+	switch (input) {
+	case PPS_INPUT_INTERNAL:
+		choice = 0;
+		output_low(OUTPUT_SELECT_EX);
+		break;
+	case PPS_INPUT_EXTERNAL:
+		choice = 1;
+		output_high(OUTPUT_SELECT_EX);
+		break;
+	default:
+		return;  // WTF
+	}
+	menu_force_selection(MENU_SOURCE, choice);
+	reset_integration();
+}
+
 
 static void menu_next_entry()
 {
