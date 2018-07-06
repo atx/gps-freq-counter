@@ -15,7 +15,7 @@
 
 struct bit_handler {
 	uint32_t mask;
-	void (*fn)();
+	void (*fn)(void);
 };
 
 static struct bit_handler ack_handlers[] = {

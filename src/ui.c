@@ -494,8 +494,10 @@ void ui_on_key_up()
 }
 
 
-void ui_on_pps(uint32_t count)
+void ui_on_pps()
 {
+	uint32_t count = pps_value();
+
 	ui_state.pps.flip = !ui_state.pps.flip;
 
 	uint32_t now = time_ms();
