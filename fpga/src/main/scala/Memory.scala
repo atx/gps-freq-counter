@@ -33,32 +33,6 @@ class Memory(nwords: Int) extends Module {
   Memory.connectMemory(mem, io.bus)
 }
 
-object ReadOnlyMemory {
-  def fromResource(resourceName: String) : ReadOnlyMemory = {
-    val inputStream = getClass.getResourceAsStream("/" + resourceName)
-    val stream = Stream.continually(inputStream.read)
-      .takeWhile(_ != -1).map(_.longValue).grouped(4)
-    val data = (stream map { v =>
-      var word = 0l
-      for ((c, i) <- v.zipWithIndex) {
-        word |= (c << (i * 8))
-      }
-      word
-    } map (_.U(32.W))).toList
-    return Module(new ReadOnlyMemory(data))
-  }
-}
-
-class ReadOnlyMemory(data: Seq[UInt]) extends Module {
-  val io = IO(new Bundle {
-    val bus = Flipped(new MemoryBus)
-  })
-
-  private val rom = Vec(data)
-  io.bus.ready := true.B
-  io.bus.rdata := rom(io.bus.addr >> 2)
-}
-
 
 class VerilogInitializedMemoryBase(resourceName: String, mifName: String = null, wordCount: Int = 0)
     extends BlackBox with HasBlackBoxInline {

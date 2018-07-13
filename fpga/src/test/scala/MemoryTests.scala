@@ -57,22 +57,6 @@ class MemoryTester(c: Memory) extends PeekPokeTester(c) {
   }
 }
 
-object ReadOnlyMemoryTester {
-  private val rng = new scala.util.Random(42)
-  val initData = (0 to 128) map ((_) => rng.nextInt(2147483647).U(32.W))
-}
-
-class ReadOnlyMemoryTester(c: ReadOnlyMemory) extends PeekPokeTester(c) {
-  val rng = new scala.util.Random(42)
-  for (idx <- rng.shuffle(0 to ReadOnlyMemoryTester.initData.length - 1)) {
-    poke(c.io.bus.valid, true.B)
-    poke(c.io.bus.addr, (idx << 2).U)
-    step(1)
-    expect(c.io.bus.rdata, ReadOnlyMemoryTester.initData(idx))
-    expect(c.io.bus.ready, true.B)
-  }
-}
-
 class VerilogInitializedMemoryTester(c: VerilogInitializedMemory) extends PeekPokeTester(c) {
   val bus = new gfc.test.BusHelper(this, c.io.bus, readTimeout = 1)
   val inputStream = getClass.getResourceAsStream("/verilog_initialized_memory.hex")
@@ -87,8 +71,6 @@ class VerilogInitializedMemoryTester(c: VerilogInitializedMemory) extends PeekPo
 
 class MemoryTests extends GFCSpec {
   should("handle writes and read correctly", () => new Memory(1024), new MemoryTester(_))
-  should("properly initialize and handle reads",
-    () => new ReadOnlyMemory(ReadOnlyMemoryTester.initData), new ReadOnlyMemoryTester(_))
   should("properly initialize and handle reads",
     () => new VerilogInitializedMemory("verilog_initialized_memory.hex"),
     new VerilogInitializedMemoryTester(_), Array("--backend-name", "verilator"))

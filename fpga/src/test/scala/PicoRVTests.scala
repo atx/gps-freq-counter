@@ -5,6 +5,18 @@ import chisel3._
 import chisel3.iotesters.{PeekPokeTester}
 
 
+// TODO: Make this into Memory with pokeAt somehow
+protected class ReadOnlyMemory(data: Seq[UInt]) extends Module {
+  val io = IO(new Bundle {
+    val bus = Flipped(new MemoryBus)
+  })
+
+  private val rom = Vec(data)
+  io.bus.ready := true.B
+  io.bus.rdata := rom(io.bus.addr >> 2)
+}
+
+
 abstract class PicoRVBaseTester(c: PicoRV) extends PeekPokeTester(c) {
   val memory: Array[BigInt]
   def runProcessor(numSteps: Int) = {
