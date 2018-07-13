@@ -230,6 +230,8 @@ class PeripheralTxTester(c: Peripheral) extends PeekPokeTester(c) {
   val rspPacketData = List(
       0xde, 0xad, 0xbe, 0xef, 0x12, 0x34, 0x56, 0x78, 0x9a
     )
+  // Note that we _don't_ CRC the first byte
+  val rspCRC = List(0xc8, 0xc9)
 
   for ((byte, i) <- rspPacketData.zipWithIndex) {
     bmem.write(i * 4, byte, "b0001".U)
@@ -247,12 +249,12 @@ class PeripheralTxTester(c: Peripheral) extends PeekPokeTester(c) {
   poke(c.io.usb.in.eop, true.B)
   step(1)
 
-  for (byte <- rspPacketData) {
+  for (byte <- (rspPacketData ++ rspCRC)) {
     poke(c.io.usb.out.ack, true.B)
-    step(10)
+    step(c.cyclesPerBit)
     expect(c.io.usb.out.byte, byte)
     poke(c.io.usb.out.ack, false.B)
-    step(20)
+    step(c.cyclesPerBit * 2)
   }
   poke(c.io.usb.out.ack, true.B)
   step(10)
@@ -266,6 +268,6 @@ class USBTests extends gfc.GFCSpec {
   should("Synchronize to incoming bit stream", () => new Synchronizer(cyclesPerBit = 64), new SynchronizerTester(_))
   should("Split incoming bit stream to packet bytes", () => new Receiver, new ReceiverTester(_))
   should("Transmit packet bits", () => new Transmitter(64), new TransmitterTester(_))
-  should("Correctly handle receiving USB packets", () => new Peripheral, new PeripheralRxTester(_))
-  should("Correctly handle transmitting USB packets", () => new Peripheral, new PeripheralTxTester(_))
+  should("Correctly handle receiving USB packets", () => new Peripheral(32), new PeripheralRxTester(_))
+  should("Correctly handle transmitting USB packets", () => new Peripheral(32), new PeripheralTxTester(_))
 }

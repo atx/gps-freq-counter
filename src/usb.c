@@ -86,35 +86,6 @@ static const struct usb_string_descriptor *string_descriptors[] = {
 };
 
 
-// TODO: Move this to FPGA logic
-// From https://github.com/xobs/grainuum/blob/master/grainuum-state.c#L58
-#define CRC_POLY	0xa001
-static uint16_t crc16_add(uint16_t crc, uint8_t c)
-{
-  uint8_t  i;
-
-  for (i = 0; i < 8; i++) {
-    if ((crc ^ c) & 1)
-      crc = (crc >> 1) ^ CRC_POLY;
-    else
-      crc >>= 1;
-    c >>= 1;
-  }
-  return crc;
-}
-
-
-static uint16_t crc16(const uint8_t *data, uint32_t size,
-                      uint16_t init)
-{
-
-  while (size--)
-    init = crc16_add(init, *data++);
-
-  return init;
-}
-
-
 static void parse_setup_packet(struct usb_setup_packet *p)
 {
 	p->bmRequestType = USB_MEMORY[1];
@@ -348,15 +319,10 @@ void usb_tx_handle()
 
 	uint8_t len = 0;
 	USB_MEMORY[len++] = next_data_pid();
-	uint16_t crc = 0xffff;
 	while (!tx_buffer_empty() && len < 9) {
 		uint8_t v = tx_buffer_pop();
 		USB_MEMORY[len++] = v;
-		crc = crc16_add(crc, v);
 	}
-	crc = ~crc;
-	USB_MEMORY[len++] = SELECT_BYTE(crc, 0);
-	USB_MEMORY[len++] = SELECT_BYTE(crc, 1);
 	if (tx_buffer_empty()) {
 		tx_buffer_finish();
 	}

@@ -351,7 +351,8 @@ class Transmitter(val cyclesPerBit: Int) extends Module {
 }
 
 
-class Peripheral extends Module {
+class Peripheral(val cyclesPerBit: Int) extends Module {
+  require(cyclesPerBit > 12)  // For the CRC
   val io = IO(new Bundle {
     val bus = new Bundle {
       val reg = Flipped(new gfc.MemoryBus)
@@ -365,9 +366,11 @@ class Peripheral extends Module {
       val rxDone = Output(Bool())
       val txEmpty = Output(Bool())
     }
+
+    val ooo = Output(UInt(16.W))
   })
 
-  val sIdle :: sRx :: sAck :: sNak :: sDropPreTx :: sTx :: sWaitForEop :: sDropNak :: Nil = Enum(8)
+  val sIdle :: sRx :: sAck :: sNak :: sDropPreTx :: sTx :: sTxCRC1 :: sTxCRC2 :: sWaitForEop :: sDropNak :: Nil = Enum(10)
   val state = RegInit(sIdle)
 
   // We can send/receive packets up to 11 bytes long (12 with the sync byte, which don't pass along)
@@ -395,6 +398,15 @@ class Peripheral extends Module {
   val readBuff = Reg(UInt(8.W))
   io.usb.out.byte := readBuff
   readBuff := txMem(txPtr)
+  // This implies that we need at least 9 cycles per byte. Could be optimized,
+  // but isn't worth it
+  val crc = Module(new gfc.CRC(0xa001.U, 8))
+  val crcValid = RegInit(false.B)
+  crcValid := false.B
+  crc.io.valid := crcValid
+  crc.io.clear := false.B
+  crc.io.input := readBuff
+  io.ooo := crc.io.result
 
   val wToReg = io.bus.reg.valid && io.bus.reg.wstrb(0)
   val wToAckBit = io.bus.reg.wdata(7)
@@ -414,6 +426,7 @@ class Peripheral extends Module {
   switch (state) {
     is (sIdle) {
       txPtr := 0.U
+      crc.io.clear := true.B
       when (io.usb.in.valid) {
         val pid = io.usb.in.byte
         when (pid === Protocol.PID.SETUP || pid === Protocol.PID.OUT) {
@@ -450,9 +463,27 @@ class Peripheral extends Module {
       io.usb.out.eop := false.B
       when (gfc.Utils.risingEdge(io.usb.out.ack)) {
         txPtr := txPtr + 1.U
-        when (txPtr === txCounter - 1.U) {
-          state := sWaitForEop
+        // We don't CRC the PID
+        when (txPtr =/= 0.U) {
+          crcValid := true.B
         }
+        when (txPtr === txCounter - 1.U) {
+          state := sTxCRC1
+        }
+      }
+    }
+    is (sTxCRC1) {
+      io.usb.out.eop := false.B
+      readBuff := crc.io.result(7, 0)
+      when (gfc.Utils.risingEdge(io.usb.out.ack)) {
+        state := sTxCRC2
+      }
+    }
+    is (sTxCRC2) {
+      io.usb.out.eop := false.B
+      readBuff := crc.io.result(15, 8)
+      when (gfc.Utils.risingEdge(io.usb.out.ack)) {
+        state := sWaitForEop
       }
     }
     is (sDropNak) {
@@ -519,7 +550,7 @@ class USB(div: Int) extends Module {
   wrap.io.drive := trs.io.drive
   val rec = Module(new Receiver)
   sync.io.stream <> rec.io.stream
-  val periph = Module(new Peripheral)
+  val periph = Module(new Peripheral(div))
   rec.io.bytes <> periph.io.usb.in
   periph.io.usb.out <> trs.io.in
 
