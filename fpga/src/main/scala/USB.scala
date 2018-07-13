@@ -262,11 +262,10 @@ class Transmitter(val cyclesPerBit: Int) extends Module {
   io.in.ack := (state === sData && bitCnt === 7.U) || state === sIdle
   io.drive := RegNext(state =/= sIdle && state =/= sPreSync)
 
-  // TODO: Fix the Reverse mess...
   switch (state) {
     is (sIdle) {
       when (!io.in.eop) {
-        buffer := Reverse(io.in.byte)
+        buffer := io.in.byte
         state := sPreSync
         sampleCnt.value := 0.U
         bitCnt := 0.U
@@ -301,21 +300,21 @@ class Transmitter(val cyclesPerBit: Int) extends Module {
     }
     is (sData) {
       when (sampleCnt.inc()) {
-        nextBit(buffer(7))
+        nextBit(buffer(0))
 
         when (bitCnt === 7.U) {
           bitCnt := 0.U
           when (io.in.eop) {
             state := sEop
           } otherwise {
-            buffer := Reverse(io.in.byte)
+            buffer := io.in.byte
           }
         } otherwise {
           bitCnt := bitCnt + 1.U
-          buffer := buffer << 1.U
+          buffer := buffer >> 1.U
         }
 
-        when (buffer(7) === 1.U) {
+        when (buffer(0) === 1.U) {
           stuff := stuff + 1.U
           when (stuff === 5.U) {
             when (bitCnt === 7.U && io.in.eop) {
@@ -368,7 +367,7 @@ class Peripheral extends Module {
     }
   })
 
-  val sIdle :: sRx :: sAck :: sNak :: sDropPreTx :: sTx :: sPostTx :: sDrop :: sDropNak :: Nil = Enum(9)
+  val sIdle :: sRx :: sAck :: sNak :: sDropPreTx :: sTx :: sWaitForEop :: sDropNak :: Nil = Enum(8)
   val state = RegInit(sIdle)
 
   // We can send/receive packets up to 11 bytes long (12 with the sync byte, which don't pass along)
@@ -385,11 +384,9 @@ class Peripheral extends Module {
   io.bus.reg.ready := RegNext(io.bus.reg.valid)
 
   io.bus.mem.ready := RegNext(io.bus.mem.valid)
+  io.bus.mem.rdata := rxMem.read(io.bus.mem.wordAddress)
   when (io.bus.mem.isWrite) {
     txMem(io.bus.mem.wordAddress) := io.bus.mem.wdata(7, 0)
-    io.bus.mem.rdata := DontCare
-  } .otherwise {
-    io.bus.mem.rdata := rxMem.read(io.bus.mem.wordAddress)
   }
 
   io.status.txEmpty := !txReady
@@ -408,7 +405,7 @@ class Peripheral extends Module {
     txReady := true.B
   }
 
-  when (wToReg && io.bus.reg.wdata(7) && wToAckBit) {
+  when (wToReg && wToAckBit) {
     isFull := false.B
   }
 
@@ -420,7 +417,7 @@ class Peripheral extends Module {
       when (io.usb.in.valid) {
         val pid = io.usb.in.byte
         when (pid === Protocol.PID.SETUP || pid === Protocol.PID.OUT) {
-          state := sDrop
+          state := sWaitForEop
         } .elsewhen (pid === Protocol.PID.DATA0 || pid === Protocol.PID.DATA1) {
           when (isFull) {
             state := sDropNak
@@ -434,9 +431,9 @@ class Peripheral extends Module {
           state := sDropPreTx
         } .elsewhen (pid === Protocol.PID.ACK) {
           txReady := false.B
-          state := sDrop
+          state := sWaitForEop
         } otherwise {
-          state := sDrop  // ¯\_(ツ)_/¯
+          state := sWaitForEop // ¯\_(ツ)_/¯
         }
       }
     }
@@ -454,18 +451,8 @@ class Peripheral extends Module {
       when (gfc.Utils.risingEdge(io.usb.out.ack)) {
         txPtr := txPtr + 1.U
         when (txPtr === txCounter - 1.U) {
-          state := sPostTx
+          state := sWaitForEop
         }
-      }
-    }
-    is (sPostTx) {
-      when (io.usb.in.eop) {
-        state := sIdle
-      }
-    }
-    is (sDrop) {
-      when (io.usb.in.eop) {
-        state := sIdle
       }
     }
     is (sDropNak) {
@@ -491,14 +478,19 @@ class Peripheral extends Module {
       io.usb.out.eop := false.B
       io.usb.out.byte := Protocol.PID.NAK
       when (gfc.Utils.risingEdge(io.usb.out.ack)) {
-        state := sDrop
+        state := sWaitForEop
       }
     }
     is (sAck) {
       io.usb.out.eop := false.B
       io.usb.out.byte := Protocol.PID.ACK
       when (gfc.Utils.risingEdge(io.usb.out.ack)) {
-        state := sDrop
+        state := sWaitForEop
+      }
+    }
+    is (sWaitForEop) {
+      when (io.usb.in.eop) {
+        state := sIdle
       }
     }
   }
