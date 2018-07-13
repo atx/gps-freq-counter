@@ -4,13 +4,14 @@ package gfc
 import chisel3._
 
 
-class UARTTXTester(c: UART) extends BusTester(c, c.io.bus) {
+class UARTTXTester(c: UART) extends BetterPeekPokeTester(c) {
+  val bus = new gfc.test.BusHelper(this, c.io.bus)
 
   def readTxEmpty() : BigInt = {
     peek(c.io.status.txEmpty)
   }
   def writeTx(v: BigInt) = {
-    busWrite(0x0.U, v.U, "b0001".U)
+    bus.write(0x0.U, v.U, "b0001".U)
   }
 
   def rxByte() = {
@@ -69,7 +70,7 @@ class UARTTXTester(c: UART) extends BusTester(c, c.io.bus) {
   step(1000)
 }
 
-class UARTRXTester(c: UART) extends BusTester(c, c.io.bus, readTimeout=0) {
+class UARTRXTester(c: UART) extends BetterPeekPokeTester(c) {
 
   def readRxFull() : BigInt = peek(c.io.status.rxFull)
   def readRx() : BigInt = {

@@ -2,10 +2,10 @@
 package gfc
 
 import chisel3._
+import chisel3.iotesters.{PeekPokeTester}
 
 
-class PPSCounterTester(c: PPSCounter) extends BusTester(c, c.io.bus) {
-
+class PPSCounterTester(c: PPSCounter) extends PeekPokeTester(c) {
   poke(c.io.pps, false.B)
   poke(c.io.signal, false.B)
   step(10)

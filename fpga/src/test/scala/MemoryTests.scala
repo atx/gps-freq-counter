@@ -73,12 +73,13 @@ class ReadOnlyMemoryTester(c: ReadOnlyMemory) extends PeekPokeTester(c) {
   }
 }
 
-class VerilogInitializedMemoryTester(c: VerilogInitializedMemory) extends BusTester(c, c.io.bus, readTimeout=1) {
+class VerilogInitializedMemoryTester(c: VerilogInitializedMemory) extends PeekPokeTester(c) {
+  val bus = new gfc.test.BusHelper(this, c.io.bus, readTimeout = 1)
   val inputStream = getClass.getResourceAsStream("/verilog_initialized_memory.hex")
   val words = VerilogInitializedMemory.loadVerilogHexFromStream(inputStream)
 
   for ((e, a) <- words.zipWithIndex) {
-    val r = busRead((a << 2).U)
+    val r = bus.read((a << 2).U)
     step(1)
     expect(r == e, s"mem($a) = $r (expected $e)")
   }

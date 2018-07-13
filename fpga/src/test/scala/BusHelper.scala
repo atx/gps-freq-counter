@@ -7,7 +7,6 @@ import chisel3.iotesters.{PeekPokeTester}
 
 class BusHelper[+T <: Module](val tester: PeekPokeTester[T], val bus: gfc.MemoryBus,
     val forceReadStep: Boolean = true, val readTimeout: Int = 100) {
-  // TODO: Drop BusTester and use this everywhere
   // It's more convenient to use literal UInts as Scala does not do binary int
   // literals
   // TODO: Look into how implicit type conversions work in scala

@@ -69,15 +69,10 @@ class OutputRegisterWrapper extends Module {
 }
 
 
-class OutputRegisterTester(c: OutputRegisterWrapper) extends BusTester(c, c.io.bus, forceReadStep = true) {
-  def write(value: UInt, mask: UInt = "b1111".U) = {
-    busWrite(0x0.U, value, mask)
-  }
-  def read() : BigInt = {
-    busRead(0x0.U)
-  }
+class OutputRegisterTester(c: OutputRegisterWrapper) extends BetterPeekPokeTester(c) {
+  val bus = new gfc.test.BusHelper(this, c.io.bus, forceReadStep = true)
   def expectRead(v: BigInt) = {
-    val r = busRead(0.U)
+    val r = bus.reg()
     expect(r == v, s"$v == $r")
   }
   def expectRead(exp: String) : Unit = {
@@ -96,17 +91,17 @@ class OutputRegisterTester(c: OutputRegisterWrapper) extends BusTester(c, c.io.b
   expectRead("b0110100011")
 
   // Longer write
-  write("b111101011101111".U)
+  bus.reg("b111101011101111".U)
   expectRead("b1011101111")
   expect(c.io.value, "b1011101111".U)
   expect(c.io.out, "b1011101111".U)
   step(2)
 
   // Masked write
-  write(0x8a7b6c5dl.U)
-  write(0x12347891l.U, "b0010".U)
+  bus.reg(0x8a7b6c5dl.U)
+  bus.reg(0x12347891l.U, "b0010".U)
   expectRead(0x8a7b785dl & bitMask)
-  write(0x00000000l.U, "b0001".U)
+  bus.reg(0x00000000l.U, "b0001".U)
   expectRead(0x8a7b7800l & bitMask)
   step(5)
 }

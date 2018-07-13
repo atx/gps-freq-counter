@@ -4,7 +4,8 @@ package gfc
 import chisel3._
 
 
-class SPITester(c: SPI) extends BusTester(c, c.io.bus) {
+class SPITester(c: SPI) extends BetterPeekPokeTester(c) {
+  val bus = new gfc.test.BusHelper(this, c.io.bus)
 
   def readSPIByte() : Int = {
     var ret = 0x00
@@ -36,7 +37,7 @@ class SPITester(c: SPI) extends BusTester(c, c.io.bus) {
 
   for ((writes, expecteds) <- testSequence) {
     for ((address, value) <- writes) {
-      busWrite(address, value)
+      bus.write(address, value)
     }
 
     for (expected <- expecteds) {
