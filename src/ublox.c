@@ -97,6 +97,7 @@ static void dispatch_msg(const struct ublox_header *ubx)
 			}
 		}
 		ublox_state.n_sats = n_sats;
+		ublox_state.last_update = time_ms();
 		ublox_gps_state_change_handler();
 		break;
 	}
