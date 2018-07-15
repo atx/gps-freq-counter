@@ -153,7 +153,6 @@ class Receiver extends Module {
     val reset = Output(Bool())
   })
 
-  // TODO: Proper state machine here
   val sIdle :: sRx :: sWaitForEop :: Nil = Enum(3)
   val state = RegInit(sIdle)
   val bitCnt = Reg(UInt(log2Ceil(7).W))
@@ -378,7 +377,7 @@ class Peripheral(val cyclesPerBit: Int) extends Module {
   val rxCounter = RegInit(0.U(4.W))
   val txCounter = RegInit(0.U(4.W))
   val txPtr = RegInit(0.U(4.W))
-  val rxMem = SyncReadMem(memLength, UInt(8.W))  // TODO: Why is this not getting synthesized as an SRAM?
+  val rxMem = SyncReadMem(memLength, UInt(8.W))
   val txMem = Mem(memLength, UInt(8.W))
   val txReady = RegInit(false.B)
   val isFull = RegInit(false.B)

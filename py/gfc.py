@@ -147,7 +147,6 @@ def do_measure(dev, args):
 
 if __name__ == "__main__":
     import argparse
-    # TODO: Make this into a proper script+package
     parser = argparse.ArgumentParser()
     subparsers = parser.add_subparsers(dest="mode")
     subparsers.required = True

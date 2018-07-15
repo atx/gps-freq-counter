@@ -468,7 +468,6 @@ static void menu_next_entry()
 static void menu_confirm()
 {
 	if (ui_state.menu.open) {
-		// TODO
 		ui_state.menu.open = false;
 		unsigned int choice = ui_state.menu.prechoice;
 		ui_state.menu.choices[ui_state.menu.selected] = choice;
@@ -483,7 +482,7 @@ static void menu_confirm()
 				output_high(OUTPUT_SELECT_EX);
 			}
 			reset_integration();
-			break;  // TODO
+			break;
 		case MENU_HELP:
 			break;  // TODO
 		}

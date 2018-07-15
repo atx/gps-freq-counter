@@ -99,7 +99,6 @@ class UART(val divider: Int = 32, val perBit: Int = 16) extends Module {
   when (io.bus.valid && io.bus.wstrb(0) && txEmpty) {
     // Our TX register is getting written to
     // It's the writer responsibility to check the txEmpty flag before writing
-    // TODO: Maybe block the read signal instead?
     txData := io.bus.wdata(7, 0)
     txEmpty := false.B
   }

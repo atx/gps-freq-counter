@@ -85,7 +85,6 @@ void oled_init()
 	cmdbuff = spi_get_buffer_pointer(0);
 	framebuff = spi_get_buffer_pointer(4);
 
-	// TODO: Get a timer or something?
 	output_high(OUTPUT_OLED_RST);
 	nop_loop(10000);
 	output_low(OUTPUT_OLED_RST);

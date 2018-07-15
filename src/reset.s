@@ -10,5 +10,4 @@ _stub_start:
 .globl _stub_irq
 
 _stub_irq:
-	# TODO: Register setup here
 	j irq_handler

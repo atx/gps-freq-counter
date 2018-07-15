@@ -261,7 +261,6 @@ static void handle_command_out(struct usb_setup_packet *p)
 
 }
 
-// TODO: Move this to a struct...
 static uint8_t next_data_pid() {
 	usb_state.data_pid_switch = !usb_state.data_pid_switch;
 	return usb_state.data_pid_switch ? USB_PID_DATA0 : USB_PID_DATA1;
