@@ -62,7 +62,6 @@ void main()
 
 		uint32_t stat = STATUS_REG;
 		if (stat) {
-			output_high(OUTPUT_LED_A);
 			call_handlers(stat, status_handlers, ARRAY_SIZE(status_handlers));
 		}
 
