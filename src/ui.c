@@ -417,12 +417,6 @@ static void menu_confirm()
 }
 
 
-void ui_init()
-{
-	// Nothing at this point
-}
-
-
 void ui_on_key_down()
 {
 	ui_state.key_down_time = time_ms();

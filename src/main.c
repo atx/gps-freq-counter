@@ -45,7 +45,7 @@ static void call_handlers(uint32_t val, struct bit_handler *handlers, size_t len
 void main()
 {
 	oled_init();
-	ui_init();
+
 	timems_t next_tick = time_ms();
 	while (true) {
 
