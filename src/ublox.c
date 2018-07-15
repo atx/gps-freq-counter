@@ -7,6 +7,8 @@
 #include "ui.h"
 #include "utils.h"
 
+#include "ublox.h"
+
 #if __BYTE_ORDER__  != __ORDER_LITTLE_ENDIAN__
 #error "This code works only on little endian machines"
 #endif
@@ -69,13 +71,23 @@ struct ublox_header {
 } __attribute__((packed));
 
 
+struct ublox_state ublox_state = {
+	.n_sats = 0,
+	.has_fix = false,
+	.last_update = 0,
+};
+
+
+__attribute__((weak))
+void ublox_gps_state_change_handler(void) {}
+
+
 static void dispatch_msg(const struct ublox_header *ubx)
 {
 	switch (ubx->msg_id) {
 	case UBX_NAV_STATUS:
-		ui_on_gps_status(
-			ubx->nav_status.gpsFix == 0x02 || ubx->nav_status.gpsFix == 0x03
-		);
+		ublox_state.has_fix = ubx->nav_status.gpsFix == 0x02 || ubx->nav_status.gpsFix == 0x03;
+		ublox_gps_state_change_handler();
 		break;
 	case UBX_NAV_SVINFO: {
 		unsigned int n_sats = 0;
@@ -84,7 +96,8 @@ static void dispatch_msg(const struct ublox_header *ubx)
 				n_sats++;
 			}
 		}
-		ui_on_gps_svinfo(n_sats);
+		ublox_state.n_sats = n_sats;
+		ublox_gps_state_change_handler();
 		break;
 	}
 	case UBX_TIM_TP:

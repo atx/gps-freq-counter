@@ -3,9 +3,11 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-#include "usb.h"
 #include "oled.h"
+#include "pps.h"
 #include "regs.h"
+#include "ublox.h"
+#include "usb.h"
 
 #include "ui.h"
 
@@ -107,14 +109,7 @@ struct ui_state {
 		unsigned int prechoice;  // Choice in a currently open menu
 	} menu;
 	struct {
-		bool has_fix;
-		unsigned int n_sats;
-		timems_t last_update;
-	} gps;
-	struct {
 		bool flip;
-		uint32_t last_value;
-		timems_t last_update;
 
 		struct {
 			uint16_t counter;
@@ -143,15 +138,8 @@ static struct ui_state ui_state = {
 		},
 		.prechoice = 0
 	},
-	.gps = {
-		.has_fix = false,
-		.n_sats = 0,
-		.last_update = 0
-	},
 	.pps = {
 		.flip = false,
-		.last_value = 0,
-		.last_update = 0,
 		.i = {
 			.counter = 0,
 			.value = 0,
@@ -272,10 +260,10 @@ static void render_status_gps()
 {
 	const unsigned int x = STATUS_X_POSITION(1);
 	const unsigned int y = 0;
-	const struct sprite *s = ui_state.gps.has_fix ? &sprite_status_gps_fix : &sprite_status_gps_nofix;
+	const struct sprite *s = ublox_state.has_fix ? &sprite_status_gps_fix : &sprite_status_gps_nofix;
 	blit_sprite(s, x, y, OLED_BLIT_NORMAL);
-	unsigned int idx = ui_state.gps.n_sats;
-	if (time_ms() - ui_state.gps.last_update > 4000) {
+	unsigned int idx = ublox_state.n_sats;
+	if (time_ms() - ublox_state.last_update > 4000) {
 		idx = 11;  // The '?' character
 	} else if (idx > 10) {
 		idx = 10;  // This is the '+' chracter
@@ -519,19 +507,15 @@ void ui_on_key_up()
 }
 
 
-void ui_on_pps()
+void pps_update_handler()
 {
-	uint32_t count = pps_value();
-
 	ui_state.pps.flip = !ui_state.pps.flip;
 
-	uint32_t now = time_ms();
-	if (now - ui_state.pps.last_update > 1100) {
+	if (pps_state.time_diff > 1010) {
 		reset_integration();
 	}
 
-	ui_state.pps.last_value = count;
-	ui_state.pps.last_update = time_ms();
+	uint32_t count = pps_state.value;
 
 	unsigned int incount = menu_choice_digits_to_intime[ui_state.menu.choices[MENU_INTIME]];
 
@@ -617,34 +601,7 @@ void ui_on_frame()
 }
 
 
-void ui_on_gps_status(bool has_fix)
+void ublox_gps_state_change_handler()
 {
-	ui_state.gps.has_fix = has_fix;
 	DIRTY(gps);
-}
-
-void ui_on_gps_svinfo(unsigned int n_sats)
-{
-	ui_state.gps.n_sats = n_sats;
-	ui_state.gps.last_update = time_ms();
-	DIRTY(gps);
-}
-
-
-struct pps_measurement ui_state_last_measurement()
-{
-	return (struct pps_measurement){
-		.value = ui_state.pps.last_value,
-		.timestamp = ui_state.pps.last_update,
-	};
-}
-
-
-struct gps_state ui_state_gps()
-{
-	return (struct gps_state) {
-		.n_sats = ui_state.gps.n_sats,
-		.has_fix = ui_state.gps.has_fix,
-		.timestamp = ui_state.gps.last_update
-	};
 }

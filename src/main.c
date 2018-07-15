@@ -3,12 +3,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "oled.h"
+#include "pps.h"
 #include "regs.h"
 #include "ublox.h"
-#include "utils.h"
-#include "oled.h"
 #include "ui.h"
 #include "usb.h"
+#include "utils.h"
 
 
 #define TICK_EVERY_MS		100
@@ -22,7 +23,7 @@ static struct bit_handler ack_handlers[] = {
 	{ ACK_BUTTON_DOWN, ui_on_key_down },
 	{ ACK_BUTTON_UP, ui_on_key_up } ,
 	{ ACK_UART_RXFULL, uart_process_rx },
-	{ ACK_PPS, ui_on_pps },
+	{ ACK_PPS, pps_handler },
 };
 
 static struct bit_handler status_handlers[] = {

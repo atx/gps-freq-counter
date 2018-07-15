@@ -1,10 +1,12 @@
 
+#include "cmds.h"
+#include "pps.h"
 #include "regs.h"
+#include "ublox.h"
+#include "ui.h"
 
 #include "usb.h"
 #include "usb_protocol.h"
-#include "cmds.h"
-#include "ui.h"
 
 
 static const struct usb_device_descriptor device_descriptor = {
@@ -204,9 +206,8 @@ const uint8_t *command_get_measurement(struct usb_setup_packet *setup, uint8_t *
 {
 	uint8_t *ptr = usb_state.shared_buffer;
 	uint8_t *p = ptr;
-	struct pps_measurement msm = ui_state_last_measurement();
-	p = serialize_uint32(p, msm.timestamp);
-	p = serialize_uint32(p, msm.value);
+	p = serialize_uint32(p, pps_state.timestamp);
+	p = serialize_uint32(p, pps_state.value);
 	*len = 8;
 	return ptr;
 }
@@ -216,9 +217,8 @@ const uint8_t *command_get_gps_info(struct usb_setup_packet *setup, uint8_t *len
 {
 	uint8_t *ptr = usb_state.shared_buffer;
 	uint8_t *p = ptr;
-	struct gps_state gps = ui_state_gps();
-	p = serialize_uint32(p, gps.timestamp);
-	*p = gps.n_sats | (gps.has_fix ? BIT(7) : 0);
+	p = serialize_uint32(p, ublox_state.last_update);
+	*p = ublox_state.n_sats | (ublox_state.has_fix ? BIT(7) : 0);
 	*len = 5;
 	return ptr;
 }
