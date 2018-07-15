@@ -206,9 +206,14 @@ const uint8_t *command_get_measurement(struct usb_setup_packet *setup, uint8_t *
 {
 	uint8_t *ptr = usb_state.shared_buffer;
 	uint8_t *p = ptr;
-	p = serialize_uint32(p, pps_state.timestamp);
-	p = serialize_uint32(p, pps_state.value);
-	*len = 8;
+	if (setup->wIndex < ARRAY_SIZE(pps_state.values)) {
+		p = serialize_uint32(p, pps_state.timestamp);
+		p = serialize_uint32(p, pps_state.values[setup->wIndex]);
+		*len = 8;
+	} else {
+		// Evil hacker protection
+		*len = 0;
+	}
 	return ptr;
 }
 
@@ -224,19 +229,10 @@ const uint8_t *command_get_gps_info(struct usb_setup_packet *setup, uint8_t *len
 }
 
 
-const uint8_t *command_set_input(struct usb_setup_packet *setup, uint8_t *len)
-{
-	ui_set_input(setup->wValueL == 0 ? PPS_INPUT_INTERNAL : PPS_INPUT_EXTERNAL);
-	*len = 0;
-	return NULL;
-}
-
-
 static struct command_handler command_handlers[] = {
 	{ CMD_GET_BUILD_DATE, command_get_build_date },
 	{ CMD_GET_MEASUREMENT, command_get_measurement },
 	{ CMD_GET_GPS_INFO, command_get_gps_info },
-	{ CMD_SET_INPUT, command_set_input },
 };
 
 

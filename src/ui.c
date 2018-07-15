@@ -411,32 +411,6 @@ static void reset_integration()
 	DIRTY(value);
 }
 
-static void menu_force_selection(enum menu_entry entry, unsigned int choice)
-{
-	ui_state.menu.choices[entry] = choice;
-	DIRTY(menu);
-}
-
-
-void ui_set_input(enum pps_input input)
-{
-	unsigned int choice = 0;
-	switch (input) {
-	case PPS_INPUT_INTERNAL:
-		choice = 0;
-		output_low(OUTPUT_SELECT_EX);
-		break;
-	case PPS_INPUT_EXTERNAL:
-		choice = 1;
-		output_high(OUTPUT_SELECT_EX);
-		break;
-	default:
-		return;  // WTF
-	}
-	menu_force_selection(MENU_SOURCE, choice);
-	reset_integration();
-}
-
 
 static void menu_next_entry()
 {
@@ -461,14 +435,7 @@ static void menu_confirm()
 		ui_state.menu.choices[ui_state.menu.selected] = choice;
 		switch (ui_state.menu.selected) {
 		case MENU_INTIME:
-			reset_integration();
-			break;
 		case MENU_SOURCE:
-			if (choice == 0) {
-				output_low(OUTPUT_SELECT_EX);
-			} else {
-				output_high(OUTPUT_SELECT_EX);
-			}
 			reset_integration();
 			break;
 		case MENU_HELP:
@@ -515,7 +482,8 @@ void pps_update_handler()
 		reset_integration();
 	}
 
-	uint32_t count = pps_state.value;
+	unsigned int cidx = ui_state.menu.choices[MENU_SOURCE];
+	uint32_t count = pps_state.values[cidx];
 
 	unsigned int incount = menu_choice_digits_to_intime[ui_state.menu.choices[MENU_INTIME]];
 

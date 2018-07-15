@@ -113,12 +113,13 @@ class Top(implicit val conf: TopConfig) extends RawModule {
     val uart = Module(new UART(625, 15))
     io.uart <> uart.io.uart
 
-    val pps = Module(new PPSCounter)
     val ppsSync = Utils.synchronize(io.pps)
-    val signalSelectExt = Wire(Bool())
-    pps.io.pps := ppsSync
-    pps.io.signal := Mux(signalSelectExt,
-      Utils.synchronize(io.signal), Utils.synchronize(io.oscillator.toBits === 1.U))
+    val ppsMods = List(io.oscillator.toBits === 1.U, io.signal) map { sig =>
+      val pps = Module(new PPSCounter)
+      pps.io.pps := ppsSync
+      pps.io.signal := Utils.synchronize(sig)
+      pps
+    }
 
     val usb = Module(new gfc.usb.USB(conf.mainClockFreq / 1500000))
     usb.io.usb <> io.usb.data
@@ -134,7 +135,6 @@ class Top(implicit val conf: TopConfig) extends RawModule {
       io.oled.rst -> true,
       io.leds.a -> false,
       io.leds.b -> false,
-      signalSelectExt -> false,
       io.usb.pullup -> false
       )
     io.oled.dc := Mux(io.oled.spi.cs === false.B, oledRawDC, true.B)
@@ -146,7 +146,7 @@ class Top(implicit val conf: TopConfig) extends RawModule {
     val ackReg = AcknowledgeRegister.build(List(
       buttonProcessed, !buttonProcessed,
       uart.io.status.rxFull,
-      pps.io.status.updated,
+      ppsMods(0).io.status.updated, // Does not really matter which one we pick
       ))
 
     var mmDevices =
@@ -160,7 +160,7 @@ class Top(implicit val conf: TopConfig) extends RawModule {
       MemoryMux.singulars(
         0x31000000l,
         statusReg.io.bus, outputReg.io.bus, msTimer.io.bus, ackReg.io.bus,
-        uart.io.bus, pps.io.bus, usb.io.bus.reg
+        uart.io.bus, usb.io.bus.reg, ppsMods(0).io.bus, ppsMods(1).io.bus
       )
     if (conf.isSim) {
       val debugReg = Module(new OutputRegister(0.U(32.W)))

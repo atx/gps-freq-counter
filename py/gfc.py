@@ -17,14 +17,14 @@ class Command:
     GET_BUILD_DATE = Command(0x01, 24)
     GET_MEASUREMENT = Command(0x02, 8)
     GET_GPS_INFO = Command(0x03, 5)
-    SET_INPUT = Command(0x04, 0)
+
+
+class Channel(enum.IntEnum):
+    INTERNAL = 0
+    EXTERNAL = 1
 
 
 class Device:
-
-    class Input(enum.IntEnum):
-        INTERNAL = 0
-        EXTERNAL = 1
 
     def __init__(self):
         self.dev = usb.core.find(product="GPS Frequency Counter")
@@ -57,13 +57,10 @@ class Device:
         n_sats = value & ~mask
         return timestamp, has_fix, n_sats
 
-    def fetch_measurement(self):
-        raw = self.command_in(Command.GET_MEASUREMENT)
+    def fetch_measurement(self, channel):
+        raw = self.command_in(Command.GET_MEASUREMENT, arg2=int(channel))
         timestamp, value = struct.unpack("<II", raw)
         return timestamp, value
-
-    def select_input(self, select):
-        return self.command_in(Command.SET_INPUT, arg1=int(select))
 
 
 def ansi_escape(code, *args):
@@ -72,16 +69,13 @@ def ansi_escape(code, *args):
 
 def do_config(dev, args):
     print("Firmware build date '{}'".format(dev.build_date.isoformat(" ")))
-    if args.input:
-        print("Configuring input to '{}'".format(args.input))
-        dev.select_input(getattr(Device.Input, args.input.upper()))
 
 
 def do_raw(dev, args):
     with args.output.open("w") as fout:
         timestamp, value = None, None
         while True:
-            new_timestamp, new_value = dev.fetch_measurement()
+            new_timestamp, new_value = dev.fetch_measurement(args.channel)
             gps_timestamp, gps_has_fix, gps_n_sats = dev.fetch_gps_status()
             if new_timestamp != timestamp:
                 print("{: 9d}     {: 9d}     {: 2d} {}"
@@ -104,7 +98,7 @@ def do_measure(dev, args):
         while True:
             time.sleep(0.2)
             timestamp = new_timestamp
-            new_timestamp, value = dev.fetch_measurement()
+            new_timestamp, value = dev.fetch_measurement(args.channel)
             if timestamp is None or new_timestamp == timestamp:
                 continue
 
@@ -152,7 +146,6 @@ if __name__ == "__main__":
     subparsers.required = True
 
     parser_config = subparsers.add_parser("config")
-    parser_config.add_argument("-i", "--input", choices=["internal", "external"])
 
     parser_raw = subparsers.add_parser("raw")
     parser_raw.add_argument(
@@ -172,7 +165,18 @@ if __name__ == "__main__":
         type=float
     )
 
+    for p in [parser_raw, parser_measure]:
+        p.add_argument(
+            "-c", "--channel",
+            type=str.lower,
+            choices=[c.name.lower() for c in Channel],
+            required=True,
+        )
+
     args = parser.parse_args()
+    # Do this instead of type= to show choices correctly
+    if "channel" in args:
+        args.channel = getattr(Channel, args.channel.upper())
 
     dev = Device()
 
