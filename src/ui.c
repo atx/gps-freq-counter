@@ -311,38 +311,6 @@ static void render_status_integration()
 }
 
 
-static void render_status_signal()
-{
-	static unsigned int counter = 0;
-	const unsigned int x = 28;
-	const unsigned int y = 0;
-	const unsigned int w = 10;
-	const unsigned int h = 10;
-	const unsigned int period = 6;
-
-	bool prev = (counter/4) % period < period / 2;
-	for (unsigned int dx = 0; dx < w; dx++) {
-		bool high = ((counter/4) + dx + 1) % period < period / 2;
-
-		for (unsigned int dy = 0; dy < h; dy++) {
-			bool val;
-			if (high != prev) {
-				val = true;
-			} else if (high) {
-				val = dy == h - 1;
-			} else {
-				val = dy == 0;
-			}
-			oled_draw_pixel(x + dx, y + dy, val);
-		}
-
-		prev = high;
-	}
-
-	counter = (counter + 1);
-}
-
-
 static void render_status_usb()
 {
 	bool is = usb_is_connected();
